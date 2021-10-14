@@ -1,0 +1,188 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setTokenName",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setPair",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "buildPair",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "getPair",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setSwap",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setFeeTo",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setListingFee",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "isContractLocked",
+            "args": [],
+            "amountLimit": []
+        },
+        {
+            "name": "startLock",
+            "args": [],
+            "amountLimit": []
+        },
+        {
+            "name": "stopLock",
+            "args": [],
+            "amountLimit": []
+        },
+        {
+            "name": "addLiquidity",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "checkRoute",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "createPair",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "createPairAndAddLiquidity",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "removeAsset",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "swapExactInputToken",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "swapExactOutputToken",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "getOutputAmounts",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "getInputAmounts",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "version",
+            "args": [],
+            "amountLimit": []
+        }
+    ]
+}
