@@ -71,17 +71,13 @@ class Stake {
 
   _requireOwner() {
     if(!blockchain.requireAuth(blockchain.contractOwner(), 'active')){
-      throw 'require auth error:not contractOwner';
+      throw 'Require auth error:not contractOwner';
     }
   }
 
-  fixUserToken(user){
-    this._requireOwner();
-    var userToken = this._mapGet("userToken", user, "", true);
-    this._setUserToken(user, userToken);
-  }
 
   setSwap(contractID){
+    // set swap contractID to be used for liquidity pair staking
     if(contractID.length != 52 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
@@ -99,6 +95,7 @@ class Stake {
   }
 
   addPooltoVault(token0, token1, alloc, minStake){
+    // add liquidity pair to vault for staking
     this._requireOwner()
     const pair = JSON.parse(blockchain.callWithAuth(this._getSwap(), "getPair", [token0, token1])[0]);
 
@@ -107,8 +104,6 @@ class Stake {
     }
 
     let pairName = pair.token0 + "/" + pair.token1;
-
-    //token, alloc, minStake, willUpdate
     alloc = +alloc || 0;
 
     if (this._hasPair(pairName)) {
@@ -116,7 +111,6 @@ class Stake {
     }
 
     this._addPair(pairName);
-
     this._applyDeltaToTotalAlloc(alloc);
 
     this._mapPut("pair", pairName, {
@@ -222,6 +216,7 @@ class Stake {
   }
 
   setProducerName(name){
+    // set producer name for voting and network rewards claiming
     this._requireOwner();
 
     if (!storage.globalMapHas("vote_producer.iost", "producerTable", name)) {
@@ -246,7 +241,6 @@ class Stake {
 
   startTimeLock() {
     this._requireOwner();
-
     this._put("timeLockStatus", 1, tx.publisher);
   }
 
@@ -308,16 +302,15 @@ class Stake {
   }
 
   _unlockInternal(who, token, amount, precision, today, days, willSave) {
-
     const map = this._mapGet("lockMap", who, {});
     if (!map[token]) {
       map[token] = [];
     }
 
     var remain = new BigNumber(amount);
+    // loop through the lock mapping and update the balance
     while (map[token].length > 0 && remain.gt(0)) {
       const head = map[token][0];
-
       if (today < head[0] + days) {
         break;
       }
@@ -334,6 +327,7 @@ class Stake {
     }
 
     if (willSave) {
+      // update mapping values
       this._mapPut("lockMap", who, map, tx.publisher);
     }
     // The actually withdraw amount.
@@ -491,7 +485,7 @@ class Stake {
     totalAlloc = (totalAlloc + delta).toFixed(1);
 
     if (totalAlloc < 0) {
-      throw "negative total alloc";
+      throw "Negative total alloc";
     }
 
     this._put("totalAlloc", totalAlloc.toString(), tx.publisher);
@@ -518,6 +512,7 @@ class Stake {
   }
 
   addPool(token, alloc, minStake, willUpdate) {
+    // add single tokel pool to vault for staking
     this._requireOwner();
 
     var symbol;
@@ -531,7 +526,7 @@ class Stake {
     willUpdate = +willUpdate || 0;
 
     if (this._hasPool(token)) {
-      throw "pool exists";
+      throw "Pool exists";
     }
 
     if (willUpdate) {
@@ -629,6 +624,7 @@ class Stake {
   }
 
   _mint(token, pool) {
+    // mint the token based on the current multiplier and lastRewardTime
     const now = this._getNow();
     var userToken = token.split('_')[0];
     var type = this._hasPair(token) && "pair" || "pool";
@@ -673,7 +669,7 @@ class Stake {
     const farmDate = this._get('startFarming', undefined);
 
     if (!this._hasPool(token) && !this._hasPair(token)) {
-      throw "NO_POOL_FOR_TOKEN";
+      throw "No pool for token";
     }
     var pool;
     if(this._hasPool(token)){
@@ -786,7 +782,7 @@ class Stake {
 
   stake(token, amountStr) {
     if (this._getTokenList().indexOf(token) < 0 && token.indexOf(IOST_TOKEN) < 0 && this._getPairList().indexOf(token) < 0 || token == 'iost') {
-      throw "WRONG_TOKEN";
+      throw "Invalid token.";
     }
 
     this._deposit(token, amountStr);
@@ -798,7 +794,7 @@ class Stake {
       }
     }
     const userToken = this._getUserToken(tx.publisher);
-    if (userToken) {
+    if (userToken == token) {
       this._addVote(userToken, amountStr);
     }
     this._addTotalVote(amountStr);
@@ -838,7 +834,7 @@ class Stake {
 
   _withdraw(token, amount) {
     if (!this._hasPool(token) && !this._hasPair(token)) {
-      throw "NO_POOL_FOR_TOKEN";
+      throw "No pool for token.";
     }
 
     var pool;
@@ -896,7 +892,7 @@ class Stake {
     const userRemainingAmount = new BigNumber(userInfo[token].amount).minus(realAmountStr);
 
     if (userRemainingAmount.lt(0)) {
-      throw "invalid remaining amount";
+      throw "Invalid remaining amount";
     }
 
     userInfo[token].amount = userRemainingAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
@@ -911,6 +907,7 @@ class Stake {
   }
 
   _validateWithdrawalAmount(token, amount){
+    // check if amount to be withdrawn is correct
     const key = token + ':' + tx.publisher;
     const days = token.split("_")[1] * 1 * 24 * 3600;
     const today = this._getToday();
@@ -934,6 +931,7 @@ class Stake {
   }
 
   unstake(token, amount) {
+    // Stake withdrawal
     if ((this._getTokenList().indexOf(token) < 0) && this._getPairList().indexOf(token) < 0 && (token.indexOf(IOST_TOKEN) < 0)) {
       throw "Token " + token + " is invalid.";
     }
@@ -941,7 +939,7 @@ class Stake {
     this._validateWithdrawalAmount(token, amount);
 
     const amountStr = this._withdraw(token, amount);
-    const userToken = this._getUserToken(tx.publisher);
+    const userToken = this._getUserToken(tx.publisher); // current vault vote
 
     if(token.indexOf(IOST_TOKEN) > -1 && this._getPairList().indexOf(token) < 0){
       const days = token.split("_")[1] * 1;
@@ -952,7 +950,8 @@ class Stake {
       }
     }
 
-    if (userToken) {
+    // remove staking votes
+    if (userToken == token) {
       this._minusVote(userToken, amountStr);
     }
 
@@ -1040,7 +1039,7 @@ class Stake {
 
   claim(token) {
     if (!this._hasPool(token) && !this._hasPair(token)) {
-      throw "NO_POOL_FOR_TOKEN";
+      throw "No pool for token.";
     }
 
     const userInfo = this._getUserInfo(tx.publisher);
@@ -1221,7 +1220,7 @@ class Stake {
     if (this._getTokenList().indexOf(token) < 0 && this._getPairList().indexOf(token) < 0 && token.indexOf(IOST_TOKEN) < 0) {
       throw 'Invalid token/pool.'
     }else if (token == 'iost'){
-      throw 'Invalid token/pool..'
+      throw 'Invalid token/pool.'
     }
 
     const userToken = this._getUserToken(tx.publisher);
@@ -1244,9 +1243,9 @@ class Stake {
 
   unvote(token) {
     if (this._getTokenList().indexOf(token) < 0 && this._getPairList().indexOf(token) < 0 && token.indexOf(IOST_TOKEN) < 0 ) {
-      throw 'Invalid token/pool...'
+      throw 'Invalid token/pool.'
     }else if (token == 'iost'){
-      throw 'Invalid token/pool....'
+      throw 'Invalid token/pool.'
     }
 
     const userToken = this._getUserToken(tx.publisher);
