@@ -693,7 +693,7 @@ class SwapPool {
     const config = {
       "decimal": UNIVERSAL_PRECISION,
       "canTransfer": true,
-      "fullName": "HyperDefi LP Token: " + token0 + " / " + token1
+      "fullName": "Yokozuna LP Token: " + token0 + " / " + token1
     };
 
     blockchain.callWithAuth("token.iost", "create",
