@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "setDailyTokenPercentage",
+            "name": "setPercentage",
             "args": [
                 "string"
             ],
@@ -35,14 +35,6 @@
         },
         {
             "name": "can_update",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "fixUserToken",
             "args": [
                 "string"
             ],
@@ -113,6 +105,14 @@
             "description": ""
         },
         {
+            "name": "getAPY",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "updatePool",
             "args": [
                 "string"
@@ -144,7 +144,10 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }],
             "description": ""
         },
         {

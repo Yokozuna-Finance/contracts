@@ -1,3 +1,4 @@
+const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
 const IOST_TOKEN = 'iost';
@@ -16,12 +17,21 @@ class Stake {
 
   init() {
     this._createToken();
-    this.setDailyTokenPercentage("0.03");
+    this._setDailyTokenPercentage("0.03");
   }
 
-  setDailyTokenPercentage(value){
-    this._requireOwner();
+  _setDailyTokenPercentage(value){
     this._put("dailyDistributionPercentage", value);
+  }
+
+  can_update(data) {
+    return blockchain.requireAuth(blockchain.contractOwner(), "active") && !this.isLocked();
+  }
+
+  _requireOwner() {
+    if(!blockchain.requireAuth(blockchain.contractOwner(), 'active')){
+      throw 'Require auth error:not contractOwner';
+    }
   }
 
   isLocked() {
@@ -29,6 +39,11 @@ class Stake {
     const status = +this._get("timeLockStatus", 0);
     const until = +this._get("timeLockUntil", 0);
     return status == 1 || now < until;
+  }
+
+  setPercentage(value){
+    this._requireOwner();
+    this._setDailyTokenPercentage(value)
   }
 
   setFarmDate(date){
@@ -40,7 +55,6 @@ class Stake {
     }
     this._put('startFarming', date, tx.publisher, false);
   }
-
 
   issueToken(toAddress, amount){
     // We can only issue token if start farming date is defined, 
@@ -62,23 +76,13 @@ class Stake {
     }
 
     blockchain.callWithAuth("token.iost", "issue", [this._getTokenName(), toAddress, amount]);
-
   }
-
-  can_update(data) {
-    return blockchain.requireAuth(blockchain.contractOwner(), "active") && !this.isLocked();
-  }
-
-  _requireOwner() {
-    if(!blockchain.requireAuth(blockchain.contractOwner(), 'active')){
-      throw 'Require auth error:not contractOwner';
-    }
-  }
-
 
   setSwap(contractID){
+    this._requireOwner()
+
     // set swap contractID to be used for liquidity pair staking
-    if(contractID.length != 52 || contractID.indexOf("Contract") != 0){
+    if(contractID.length >= 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
 
@@ -88,7 +92,7 @@ class Stake {
   _getSwap(){
     var contractID = this._get('swap',"", true);
 
-    if(contractID.length != 52 || contractID.indexOf("Contract") != 0){
+    if(contractID.length >= 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
     return contractID;
@@ -196,15 +200,15 @@ class Stake {
   }
 
   _getTokenName(){
-    return this._get('token', '', false);
+    return this._get('token', '', true);
   }
 
   _getTokenList(){
-    return this._get('tokenList', "[]", true);
+    return this._get('tokenList', [], true);
   }
 
   _getPairList(){
-    return this._get('pairList', "[]", true);
+    return this._get('pairList', [], true);
   }
 
   _getProducerName(){
@@ -266,7 +270,7 @@ class Stake {
     };
 
     blockchain.callWithAuth("token.iost", "create",
-        [token, blockchain.contractName(), 100000000, config]);
+        [YOKOZUNA_TOKEN_SYMBOL.toString(), blockchain.contractName(), 100000000, config]);
 
     this._setTokenName(token);
   }
@@ -368,7 +372,7 @@ class Stake {
   }
 
   _getTokenArray() {
-    return this._get("tokenArray", "[]", true);
+    return this._get("tokenArray", [], true);
   }
 
   _setUserToken(who, token) {
@@ -414,7 +418,7 @@ class Stake {
   }
 
   _getTotalVote() {
-    return this._get("totalVote", "0");
+    return this._get("totalVote", 0);
   }
 
   _setTotalVote(amountStr) {
@@ -551,14 +555,22 @@ class Stake {
     tx.publisher);
   }
 
+  getAPY(token){
+    return this._getAPY(this._getPoolAllocPercentage(token));
+  }
+
   _getAPY(poolPercentage){
     const supplyTotal = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()]));
     const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
-    const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
-    const yearlyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage)
+    const totalStaked = this._getTotalVote();
 
+    const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
+
+    const yearlyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage);
     var yearlyRewards = yearlyDistribution.times(poolPercentage);
-    var simpleApy = yearlyRewards.div(supply)
+    var simpleApy = yearlyRewards.div(totalStaked)
+
+    console.log("simpleApy", simpleApy)
 
     return this._compound(simpleApy, 2190, 1, 0.96) * 100;
   }
