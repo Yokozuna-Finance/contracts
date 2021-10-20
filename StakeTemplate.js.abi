@@ -1,0 +1,39 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "addPool",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "updateAllPools",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "updatePool",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        }
+    ]
+}
