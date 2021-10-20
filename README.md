@@ -18,12 +18,16 @@
 
 * Publish StakeTemplate.js and get the Contract ID, we need to do this as when we publish the Stake.js contract we get a timeout error
 
-    > Note: On the contract initialisation, it will create the token and set the dailyDistributionPercentage to 3%, token creation also add the token vaults/pools.
-
-
     ```
     iwallet --account yokozuna_admin publish StakeTemplate.js StakeTemplate.js.abi --gas_limit 4000000 -s 18.209.137.246:30002
     ```
+
+    > Note: On the contract initialisation, it will create the token, create the token pools/vaults and set the dailyDistributionPercentage to 3%, setting the dailyDistributionPercentage can also be done via ABI call, ei setting daily distribution percentage to 50%
+
+    ```    
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> setPercentage '["0.5"]' -s 18.209.137.246:30002
+    ``` 
+
 
 * Update the published Stake contract using the Stake.js code
 
@@ -36,6 +40,12 @@
     ```
     iwallet --account yokozuna_admin -v call <Stake Contract ID> setSwap '["<Swap Contract ID>"]' -s 18.209.137.246:30002
     ```
+
+* Set producer name, for iost staking vote network rewards
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> setProducerName '["metanyx"]' -s 18.209.137.246:30002
+    ```
+
 
 * Set the Farming start date, date parameter is in unix timestamp format.
 
