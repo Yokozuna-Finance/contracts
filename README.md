@@ -77,6 +77,8 @@
     ```
 
 
+### other ABI calls
+
 * Staking
     
     ```
@@ -87,9 +89,45 @@
     ```
 
 * Network rewards processing
+
     ```
     iwallet --account yokozuna_admin -v call <Stake Contract ID> processProducerBonus '[]' -s 18.209.137.246:30002
 
     iwallet --account yokozuna_admin -v call <Stake Contract ID> processProducerBonus '[]' -s 18.209.137.246:30002
+    
+    ```
+
+* Unstaking
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> unstake '["<vault>", "<amount>"]' -s 18.209.137.246:30002
+
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> unstake '["iost_90", "100"]' -s 18.209.137.246:30002
+    
+    ```
+
+* Rewards Claiming
+
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> claim '["<vault>"]' -s 18.209.137.246:30002
+
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> claim '["iost_90"]' -s 18.209.137.246:30002
+    
+    ```
+
+* Vote 
+
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> vote '["<vault>"]' -s 18.209.137.246:30002
+
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> vote '["iost_90"]' -s 18.209.137.246:30002
+    
+    ```
+
+* Unvote
+
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> unvote '["<vault>"]' -s 18.209.137.246:30002
+
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> unvote '["iost_90"]' -s 18.209.137.246:30002
     
     ```
