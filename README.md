@@ -49,15 +49,15 @@
     iwallet --account yokozuna_admin -v call <Stake Contract ID> issueToken '["<address>", "<amount>"]' -s 18.209.137.246:30002
     ```
 
-* Add pool/vaults for staking. token parameter should follow this format, \<token\>\_\<days\>, ei: iost_3, for iost token 3 day staking
+* Add pool/vaults for staking. vault parameter should follow this format, \<token\>\_\<days\>, ei: iost_3, for iost token 3 day staking
 
     ```
-    iwallet --account yokozuna_admin -v call <Stake Contract ID> addPool '["<pool>", "<allocation>", "<minimum stake value>", "true"]' -s 18.209.137.246:30002
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> addPool '["<vault>", "<allocation>", "<minimum stake value>", "true"]' -s 18.209.137.246:30002
 
     iwallet --account yokozuna_admin -v call <Stake Contract ID> addPool '["iost_90", "5", "1", "true"]' -s 18.209.137.246:30002    
     ```
 
-* Add pairs to vault, this will work if pair exists in the Swap contract.
+* Add pair to vault, this will work if the pair exists in the Swap contract.
     
     ```
     iwallet --account yokozuna_admin -v call <Stake Contract ID> addPooltoVault '["<token1>", "<token2>", "<allocation>", "<minimum stake value>"]' -s 18.209.137.246:30002
@@ -67,3 +67,19 @@
     ```
 
 
+* Staking
+    
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> stake '["<vault>", "<amount>"]' -s 18.209.137.246:30002
+
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> stake '["iost_90", "100"]' -s 18.209.137.246:30002
+    
+    ```
+
+* Network rewards processing
+    ```
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> processProducerBonus '[]' -s 18.209.137.246:30002
+
+    iwallet --account yokozuna_admin -v call <Stake Contract ID> processProducerBonus '[]' -s 18.209.137.246:30002
+    
+    ```
