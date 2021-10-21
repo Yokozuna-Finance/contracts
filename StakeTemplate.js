@@ -189,8 +189,8 @@ class Stake {
     this._put("token", token.toString(), tx.publisher);
 
     // create token list
-    let data = [ token + "_3", token + "_30", token + "_90"];
-    let alloc = ["3", "5", "10"]
+    let data = [ token + "_0", token + "_3", token + "_30", token + "_90"];
+    let alloc = ["1", "3", "5", "10"]
     this._put("tokenList", data, tx.publisher);
 
     // add pools

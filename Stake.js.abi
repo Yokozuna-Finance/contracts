@@ -113,14 +113,6 @@
             "description": ""
         },
         {
-            "name": "updatePool",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
             "name": "updateAllPools",
             "args": [],
             "amountLimit": [],

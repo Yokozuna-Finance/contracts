@@ -60,6 +60,7 @@ class SwapPool {
   }
 
   setTokenName(token){
+    this._requireContractOwner();
     storage.put("token", token.toString());
   }
 

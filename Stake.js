@@ -82,7 +82,7 @@ class Stake {
     this._requireOwner()
 
     // set swap contractID to be used for liquidity pair staking
-    if(contractID.length >= 51 || contractID.indexOf("Contract") != 0){
+    if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
 
@@ -92,7 +92,7 @@ class Stake {
   _getSwap(){
     var contractID = this._get('swap',"", true);
 
-    if(contractID.length >= 51 || contractID.indexOf("Contract") != 0){
+    if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
     return contractID;
@@ -102,6 +102,8 @@ class Stake {
     // add liquidity pair to vault for staking
     this._requireOwner()
     const pair = JSON.parse(blockchain.callWithAuth(this._getSwap(), "getPair", [token0, token1])[0]);
+    const now = this._getNow()
+    const farmDate = this._get('startFarming', undefined);
 
     if(pair === null || pair === undefined){
       throw "Invalid pair"
@@ -212,7 +214,7 @@ class Stake {
   }
 
   _getProducerName(){
-    return this._get('producer', 'metanyx', false);
+    return this._get('producer', 'metanyx', true);
   }
 
   _compound(r, n=365, t=1, c=1) {
@@ -239,7 +241,7 @@ class Stake {
 
     // add pools
     for (var i = data.length - 1; i >= 0; i--) {
-      this.addPool(data[i], alloc[i], "1", "False")
+      this.addPool(data[i], alloc[i], "1", true)
     }
   }
 
@@ -570,8 +572,6 @@ class Stake {
     var yearlyRewards = yearlyDistribution.times(poolPercentage);
     var simpleApy = yearlyRewards.div(totalStaked)
 
-    console.log("simpleApy", simpleApy)
-
     return this._compound(simpleApy, 2190, 1, 0.96) * 100;
   }
 
@@ -677,7 +677,7 @@ class Stake {
     this._setPoolObj(type, token, pool);
   }
 
-  updatePool(token) {
+  _updatePool(token) {
     const farmDate = this._get('startFarming', undefined);
 
     if (!this._hasPool(token) && !this._hasPair(token)) {
@@ -698,7 +698,7 @@ class Stake {
   updateAllPools() {
     const tokenArray = this._getTokenArray();
     tokenArray.forEach(token => {
-      this.updatePool(token);
+      this._updatePool(token);
     });
   }
 
@@ -1019,7 +1019,7 @@ class Stake {
 
     for (let i = 0; i <= userCount -1; i++) {
       for (let p = 0; p <= pools.length -1; p++){
-        this.updatePool(pools[p])
+        this._updatePool(pools[p])
         if(pools[p].indexOf(IOST_TOKEN) && (pools[p] != 'iost' && pools[p] != 'iost_0' && pools[p] != 'iost_1')){
           if(this._hasPool(pools[p])){
             let producerCoef;
