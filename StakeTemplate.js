@@ -96,7 +96,7 @@ class Stake {
   }
 
   _getNow(){
-    return Math.floor(tx.time / 1e9)
+    return Math.floor(block.time / 1e9)
   }
 
 
@@ -187,16 +187,6 @@ class Stake {
 
   _setTokenName(token){
     this._put("token", token.toString(), tx.publisher);
-
-    // create token list
-    let data = [ token + "_0", token + "_3", token + "_30", token + "_90"];
-    let alloc = ["1", "3", "5", "10"]
-    this._put("tokenList", data, tx.publisher);
-
-    // add pools
-    for (var i = data.length - 1; i >= 0; i--) {
-      this.addPool(data[i], alloc[i], "1", "False")
-    }
   }
 
 
@@ -288,6 +278,10 @@ class Stake {
     // add single tokel pool to vault for staking
     //this._requireOwner();
 
+    const now = this._getNow()
+    const farmDate = this._get('startFarming', undefined);
+    const lastRewardTime = now && now > farmDate || farmDate;
+
     var symbol;
     if (this._getTokenList().indexOf(token) >= 0) {
       symbol = this._getTokenName();
@@ -316,7 +310,7 @@ class Stake {
       total: "0",
       tokenPrecision: this._checkPrecision(symbol),
       alloc: alloc,
-      lastRewardTime: 0,
+      lastRewardTime: lastRewardTime,
       accPerShare: "0",
       min: minStake,
       apy:"0",
@@ -346,7 +340,7 @@ class Stake {
       pool = this._getPair(token);  
     }
     
-    if(farmDate !== undefined && tx.time >= farmDate){
+    if(farmDate !== undefined && block.time >= farmDate){
       this._mint(token, pool);
     }
   }
