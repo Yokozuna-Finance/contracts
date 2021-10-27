@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "setPercentage",
+            "name": "can_update",
             "args": [
                 "string"
             ],
@@ -13,6 +13,14 @@
         {
             "name": "isLocked",
             "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "setPercentage",
+            "args": [
+                "string"
+            ],
             "amountLimit": [],
             "description": ""
         },
@@ -28,14 +36,6 @@
             "name": "issueToken",
             "args": [
                 "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "can_update",
-            "args": [
                 "string"
             ],
             "amountLimit": [],
