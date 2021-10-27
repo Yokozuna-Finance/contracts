@@ -39,7 +39,11 @@ class SwapPool {
   }
 
   _getPairName(token0, token1) {
-    if (token0 < token1) {
+    if(token0 == 'iost'){
+      return token1  + "/" + token0
+    }else if(token1 == 'iost'){
+      return token0 + "/" + token1;
+    }else if (token0 < token1) {
       return token0 + "/" + token1;
     } else {
       return token1 + "/" + token0;
@@ -65,6 +69,7 @@ class SwapPool {
   }
 
   setPair(pairName, pair) {
+    this._requireContractOwner();
     storage.mapPut("pair", pairName, JSON.stringify(pair));
   }
 
@@ -637,7 +642,11 @@ class SwapPool {
       throw "token not set"
     }
 
-    if (token0 > token1) {
+    if (token0 == 'iost') {
+      let temp = token0;
+      token0 = token1;
+      token1 = temp;
+    } else if(token1 != 'iost' && token0 > token1){
       let temp = token0;
       token0 = token1;
       token1 = temp;
@@ -683,6 +692,7 @@ class SwapPool {
       lp: lpSymbol,
       lpSupply: "0"
     }
+
     storage.mapPut("pair", pairName, JSON.stringify(data));
 
     this._insertToAllPairs(pairName);
