@@ -693,18 +693,11 @@ class Stake {
     this._setPoolObj(type, token, pool);
   }
 
-  _updatePool(token) {
+  _updatePool(token, pool) {
     const farmDate = this._get('startFarming', undefined);
 
     if (!this._hasPool(token) && !this._hasPair(token)) {
       throw "No pool for token";
-    }
-
-    var pool;
-    if(this._hasPool(token)){
-      pool = this._getPool(token);
-    }else if(this._hasPair(token)){
-      pool = this._getPair(token);  
     }
     
     if(farmDate !== undefined && block.time >= farmDate){
@@ -715,7 +708,13 @@ class Stake {
   updateAllPools() {
     const tokenArray = this._getTokenArray();
     tokenArray.forEach(token => {
-      this._updatePool(token);
+      var pool;
+      if(this._hasPool(token)){
+        pool = this._getPool(token);
+      }else if(this._hasPair(token)){
+        pool = this._getPair(token);  
+      }
+      this._updatePool(token, pool);
     });
   }
 
@@ -797,7 +796,7 @@ class Stake {
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }
 
-    this._updatePool(token);
+    this._updatePool(token, pool);
     userAmount = userAmount.plus(amountStr);
     userInfo[token].amount = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_DOWN);
@@ -885,7 +884,7 @@ class Stake {
       return "0";
     }
 
-    this._updatePool(token);
+    this._updatePool(token, pool);
     const userAmount = new BigNumber(amount);
     const userAmountStr = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     const pending = userAmount.times(pool.accPerShare).plus(
@@ -1039,7 +1038,13 @@ class Stake {
 
     for (let i = 0; i <= userCount -1; i++) {
       for (let p = 0; p <= pools.length -1; p++){
-        this._updatePool(pools[p])
+        var pool;
+        if(this._hasPool(pools[p])){
+          pool = this._getPool(pools[p]);
+        }else if(this._hasPair(pools[p])){
+          pool = this._getPair(pools[p]);  
+        }
+        this._updatePool(pools[p], pool)
         if(this._getIOSTList().indexOf(pools[p]) > -1){
           if(this._hasPool(pools[p])){
             let producerCoef;
@@ -1092,7 +1097,7 @@ class Stake {
       return;
     }
 
-    this._updatePool(token);
+    this._updatePool(token, pool);
 
     const userAmount = new BigNumber(userInfo[token].amount);
     const pending = userAmount.times(pool.accPerShare).plus(
