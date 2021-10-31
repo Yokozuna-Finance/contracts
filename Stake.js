@@ -103,7 +103,7 @@ class Stake {
   addPooltoVault(token0, token1, alloc, minStake){
     // add liquidity pair to vault for staking
     this._requireOwner()
-    const pair = JSON.parse(blockchain.callWithAuth(this._getSwap(), "getPair", [token0, token1])[0]);
+    const pair = JSON.parse(blockchain.call(this._getSwap(), "getPair", [token0, token1])[0]);
     const now = this._getNow()
     const farmDate = this._get('startFarming', undefined);
     const lastRewardTime = now && now > farmDate || farmDate;
@@ -124,7 +124,7 @@ class Stake {
 
     this._mapPut("pair", pairName, {
       total: "0",
-      tokenPrecision: this._checkPrecision(this._getTokenName()),
+      tokenPrecision: this._checkPrecision(pair.lp),
       alloc: alloc,
       lastRewardTime: lastRewardTime,
       accPerShare: "0",
@@ -530,16 +530,13 @@ class Stake {
     // add single tokel pool to vault for staking
     this._requireOwner();
 
+    // check if token exists
+    var userToken = token.split('_')[0];
+    const tokenSupply = new BigNumber(blockchain.call("token.iost", "totalSupply", [userToken])
+
     const now = this._getNow()
     const farmDate = this._get('startFarming', undefined);
     const lastRewardTime = now && now > farmDate || farmDate;
-
-    var symbol;
-    if (this._getTokenList().indexOf(token) >= 0) {
-      symbol = this._getTokenName();
-    } else {
-      symbol = token;
-    }
 
     alloc = +alloc || 0;
     willUpdate = +willUpdate || 0;
@@ -562,7 +559,7 @@ class Stake {
 
     this._mapPut("pool", token, {
       total: "0",
-      tokenPrecision: this._checkPrecision(symbol),
+      tokenPrecision: this._checkPrecision(this._getTokenName()),
       alloc: alloc,
       lastRewardTime: lastRewardTime,
       accPerShare: "0",
@@ -643,11 +640,26 @@ class Stake {
     }
   }
 
+  _getDailyDistribution(){
+    // get daily distrib from storage first
+    // if within the same date, use it, else get the new daily distribution
+    const distrib = this._get("dailyDistribution", [0,0])
+    const today = this._getToday();
+
+    if(today == distrib[0]){
+        return distrib[1]
+    }else{
+        const supplyTotal = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()]));
+        const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
+        const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
+        const dailyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage).div(365);
+        this._put("dailyDistribution", [today, dailyDistribution])
+        return dailyDistribution
+    }
+  }
+
   _getMultiplier(fromTime, toTime) {
-    const supplyTotal = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()]));
-    const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
-    const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
-    const dailyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage).div(365);
+    const dailyDistribution = this._getDailyDistribution();
     return new BigNumber(dailyDistribution).times(toTime - fromTime).div(3600 * 24);
   }
 
