@@ -29,15 +29,6 @@ class SwapPool {
     }
   }
 
-  _getTotalSupply(lpSymbol){
-    let providerData = JSON.parse(storage.mapGet(lpSymbol, 'data'));
-    let totalSupply = new BigNumber(0);
-    for (let i = 0; i < providerData.length; i++) {
-      totalSupply = totalSupply.plus(providerData[i].supply)
-    }
-    return totalSupply;
-  }
-
   _getPairName(token0, token1) {
     if(token0 == 'iost'){
       return token1  + "/" + token0
@@ -68,8 +59,7 @@ class SwapPool {
     storage.put("token", token.toString());
   }
 
-  setPair(pairName, pair) {
-    this._requireContractOwner();
+  _setPair(pairName, pair) {
     storage.mapPut("pair", pairName, JSON.stringify(pair));
   }
 
@@ -78,12 +68,12 @@ class SwapPool {
     const pairName = token0 + "/" + token1;
     pair.token0 = token0;
     pair.token1 = token1;
-    this.setPair(pairName, pair);
+    this._setPair(pairName, pair);
   }
 
   _setPairObj(pair) {
     const pairName = pair.token0 + "/" + pair.token1;
-    this.setPair(pairName, pair);
+    this._setPair(pairName, pair);
   }
 
   getPair(token0, token1) {
@@ -104,7 +94,7 @@ class SwapPool {
   }
 
   _update(pair, balance0, balance1) {
-    const now = Math.floor(tx.time / 1e9);
+    const now = Math.floor(block.time / 1e9);
 
     if (now < pair.blockTimestampLast) {
       throw "block time error";
@@ -390,7 +380,7 @@ class SwapPool {
   }
 
   isContractLocked() {
-    const now = Math.floor(tx.time / 1e9);
+    const now = Math.floor(block.time / 1e9);
     const timeLockstatus = +storage.get("timeLockStatus") || 0;
     const timeLockuntil = +storage.get("timeLockUntil") || 0;
     return timeLockstatus == 1 || now < timeLockuntil;
@@ -404,7 +394,7 @@ class SwapPool {
 
   stopLock() {
     this._requireContractOwner();
-    const now = Math.floor(tx.time / 1e9);
+    const now = Math.floor(block.time / 1e9);
 
     storage.put("timeLockUntil", (now + TIME_LOCK_DURATION).toString());
     storage.put("timeLockStatus", "0")
@@ -635,11 +625,15 @@ class SwapPool {
     return 1;
   }
 
-  createPair(token0, token1, fromAddress) {
+  createPair(token0, token1) {
     const tokenName = this._getTokenName();
 
     if(!tokenName){
-      throw "token not set"
+      throw "token not set."
+    }
+
+    if(token0 == token1){
+      throw "cannot add pair of the same token."
     }
 
     if (token0 == 'iost') {
@@ -663,20 +657,20 @@ class SwapPool {
       throw "invalid token";
     }
 
-    const now = Math.floor(tx.time / 1e9);
+    const now = Math.floor(block.time / 1e9);
     if (this._getFeeTo()) {
       if(!this._getListingFee()){
         throw "listing fee not set."
       }
       blockchain.callWithAuth("token.iost", "transfer",
           [tokenName,
-           fromAddress,
+           JSON.parse(blockchain.contextInfo()).caller.name,
            this._getFeeTo(),
            this._getListingFee(),
            "listing fee"]);
     }
 
-    const lpSymbol = "lp" + tx.time.toString().substring(0, 13);
+    const lpSymbol = "lp_" + token0 + "_" + token1 + "_" + block.time.toString().substring(0, 13);
     let data = {
       createdTime: now,
       token0: token0,

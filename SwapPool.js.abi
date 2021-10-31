@@ -106,7 +106,10 @@
                 "string",
                 "string"
             ],
-            "amountLimit": []
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "createPairAndAddLiquidity",
