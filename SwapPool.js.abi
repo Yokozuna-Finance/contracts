@@ -17,14 +17,6 @@
             "amountLimit": []
         },
         {
-            "name": "setPair",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "buildPair",
             "args": [
                 "string",
@@ -102,7 +94,6 @@
         {
             "name": "createPair",
             "args": [
-                "string",
                 "string",
                 "string"
             ],

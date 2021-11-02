@@ -670,7 +670,8 @@ class SwapPool {
            "listing fee"]);
     }
 
-    const lpSymbol = "lp_" + token0 + "_" + token1 + "_" + block.time.toString().substring(0, 13);
+    // token symbol length should be bet 2,16
+    const lpSymbol = "lp" + this._getTokenName() + "_" + token0.substring(0, 4) + "_" + token1.substring(0,4);
     let data = {
       createdTime: now,
       token0: token0,
