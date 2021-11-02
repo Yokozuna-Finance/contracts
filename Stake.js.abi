@@ -94,6 +94,15 @@
             "description": ""
         },
         {
+            "name": "updateAllocation",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "addPool",
             "args": [
                 "string",

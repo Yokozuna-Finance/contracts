@@ -526,15 +526,40 @@ class Stake {
     return +this._globalMapGet("token.iost", "TI" + symbol, "decimal") || 0;
   }
 
+  updateAllocation(vault, alloc){
+    this._requireOwner();
+
+    alloc = +alloc;
+    var key;
+    var pool;
+    if(!alloc){
+        throw "Invalid allocation value."
+    }
+
+    if(this._hasPool(vault)){
+        pool = this._getPool(vault);
+        key = 'pool';
+    }else if(this._hasPool(vault)){
+        pool = this._getPair(vault)
+        key = 'pair';
+    }else{
+        throw "Invalid vault."
+    }
+
+    pool.alloc = alloc;
+    this._setPoolObj(key, vault, pool)
+
+  }
+
   addPool(token, alloc, minStake, willUpdate) {
     // add single tokel pool to vault for staking
     this._requireOwner();
 
     // check if token exists
     var userToken = token.split('_')[0];
-    const tokenSupply = new BigNumber(blockchain.call("token.iost", "totalSupply", [userToken])
+    const tokenSupply = new BigNumber(blockchain.call("token.iost", "totalSupply", [userToken]));
 
-    const now = this._getNow()
+    const now = this._getNow();
     const farmDate = this._get('startFarming', undefined);
     const lastRewardTime = now && now > farmDate || farmDate;
 
