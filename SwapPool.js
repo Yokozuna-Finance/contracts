@@ -671,7 +671,7 @@ class SwapPool {
     }
 
     // token symbol length should be bet 2,16
-    const lpSymbol = "lp" + this._getTokenName() + "_" + token0.substring(0, 4) + "_" + token1.substring(0,4);
+    const lpSymbol = "lp" + this._getTokenName().substring(0, 4) + "_" + token0.substring(0, 4) + "_" + token1.substring(0,4);
     let data = {
       createdTime: now,
       token0: token0,
