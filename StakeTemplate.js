@@ -9,6 +9,7 @@ const UNIVERSAL_PRECISION = 12;
 const MAP_PRODUCER_COEF = "pc";
 const PAIR_LOCK_DAYS = 0;
 const STAKE_TEAMFEE = 0.1;
+const LOCK_DAY_SEPARATOR = '$';
 
 const TIME_LOCK_DURATION = 12 * 3600; // 12 hours
 
@@ -234,7 +235,7 @@ class Stake {
   _mint(token, pool) {
     // mint the token based on the current multiplier and lastRewardTime
     const now = this._getNow();
-    var userToken = token.split('_')[0];
+    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
     var type = this._hasPair(token) && "pair" || "pool";
 
     if (now <= pool.lastRewardTime) {

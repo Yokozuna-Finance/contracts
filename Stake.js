@@ -9,6 +9,7 @@ const UNIVERSAL_PRECISION = 12;
 const MAP_PRODUCER_COEF = "pc";
 const PAIR_LOCK_DAYS = 0;
 const STAKE_TEAMFEE = 0.1;
+const LOCK_DAY_SEPARATOR = '$';
 
 const TIME_LOCK_DURATION = 12 * 3600; // 12 hours
 
@@ -304,6 +305,25 @@ class Stake {
     this._mapPut(key, who, map, tx.publisher);
   }
 
+
+  _voteMap(key, who, token, amount, precision) {
+    const map = this._mapGet(key, who, {});
+    if (!map[token]) {
+      map[token] = [];
+    }
+
+    for (let i = 0; i <= map[token].length -1; i++) {
+      if (map[token][i][0] == this._getProducerName()){
+        map[token][i][1] = new BigNumber(map[token][i][1]).plus(amount).toFixed(precision, ROUND_DOWN);
+      } else {
+        map[token].push([
+          this._getProducerName(), 
+          new BigNumber(amount).toFixed(precision, ROUND_DOWN)]);
+      }
+    }
+    this._mapPut(key, who, map, tx.publisher);
+  }
+
   _unlockInternal(who, token, amount, precision, today, days, willSave) {
     const map = this._mapGet("lockMap", who, {});
     if (!map[token]) {
@@ -390,12 +410,49 @@ class Stake {
     ]);
   }
 
-  _unvoteProducer(amount) {
-    blockchain.callWithAuth("vote_producer.iost", "unvote", [
-      blockchain.contractName(),
-      this._getProducerName(),
-      amount.toString()
-    ]);
+  _unvoteProducer(token, amount) {
+    // check voteMap for the votes to unvote
+
+    const map = this._mapGet("voteMap", who, {});
+    if (!map[token]) {
+      map[token] = [];
+    }
+
+    var remain = new BigNumber(amount);
+
+    var unvote = {};
+    // loop through the lock mapping and update the balance
+    while (map[token].length > 0 && remain.gt(0)) {
+      const head = map[token][0];
+
+      if(!unvote[head[0]]){
+        unvote[head[0]] = 0
+      }
+
+      if (remain.gte(head[1])) {
+        remain = remain.minus(head[1]);
+        unvote[head[0]] += unvote[head[1]]
+        map[token].shift();
+      } else {
+        head[1] = new BigNumber(head[1]).minus(remain).toFixed(precision, ROUND_DOWN);
+        unvote[head[0]] += remain
+        remain = new BigNumber(0);
+        map[token][0] = head;
+        break;
+      }
+    }
+
+    // update mapping values
+    this._mapPut("voteMap", who, map, tx.publisher);
+
+    for (var key in unvote){
+      blockchain.callWithAuth("vote_producer.iost", "unvote", [
+        blockchain.contractName(),
+        key,
+        unvote[key].toString()
+      ]);
+    }
+    
   }
 
   _getVote(token) {
@@ -532,7 +589,7 @@ class Stake {
     alloc = +alloc;
     var key;
     var pool;
-    if(!alloc){
+    if(!alloc || alloc < 0){
         throw "Invalid allocation value."
     }
 
@@ -546,17 +603,22 @@ class Stake {
         throw "Invalid vault."
     }
 
+    this.updateAllPools()
+
+    var delta = alloc - pool.alloc;
     pool.alloc = alloc;
+
+    this._applyDeltaToTotalAlloc(delta);
     this._setPoolObj(key, vault, pool)
 
   }
 
-  addPool(token, alloc, minStake, willUpdate) {
-    // add single tokel pool to vault for staking
+  addPool(token, lockDay, alloc, minStake, willUpdate) {
+    // add single token pool to vault for staking
     this._requireOwner();
 
     // check if token exists
-    var userToken = token.split('_')[0];
+    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
     const tokenSupply = new BigNumber(blockchain.call("token.iost", "totalSupply", [userToken]));
 
     const now = this._getNow();
@@ -637,6 +699,13 @@ class Stake {
     return new BigNumber(toTime - fromTime).div(3600 * 24);
   }
 
+  _addWithdrawLog(token, amount){
+    let userWithdrawals = this._mapGet('withdrawals', tx.publisher, []);
+    userWithdrawals.push([block.time + 3 * 24 * 3600, amount, token])
+    this._mapPut('withdrawals', tx.publisher, userWithdrawals, tx.publisher)
+
+  }
+
   _addUserVote(token, amount){
     let userVotes = this._mapGet('userInfo', tx.publisher, {})
 
@@ -655,14 +724,18 @@ class Stake {
       };
     }
     this._mapPut('userInfo', tx.publisher, userVotes, tx.publisher)
+    this._voteMap('voteMap',tx.publisher, token, amountStr, TOKEN_PRECISION)
   }
 
-  _removeUserVote(token){
+  _removeUserVote(token, amountStr){
     let userVotes = this._mapGet('userInfo', tx.publisher, {})
     if(userVotes[token]){
-      userVotes[token]['voteAmount'] = 0;
+      userVotes[token]['voteAmount'] = new BigNumber(userVotes[token]['voteAmount']).minus(amountStr);
       this._mapPut('userInfo', tx.publisher, userVotes, tx.publisher)
     }
+
+    // add log for once unvote releases the amount
+    this._addWithdrawLog(token, amountStr);
   }
 
   _getDailyDistribution(){
@@ -691,7 +764,7 @@ class Stake {
   _mint(token, pool) {
     // mint the token based on the current multiplier and lastRewardTime
     const now = this._getNow();
-    var userToken = token.split('_')[0];
+    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
     var type = this._hasPair(token) && "pair" || "pool";
 
     if (now <= pool.lastRewardTime) {
@@ -773,7 +846,6 @@ class Stake {
     if(pool === undefined){
       throw "Invalid token"
     }
-    
 
     if(amount < pool.min){
       throw "Amount is less than the minimum stake value";
@@ -807,8 +879,9 @@ class Stake {
     }
 
     if (this._getTokenList().indexOf(token) >= 0) {
+      var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
       blockchain.callWithAuth("token.iost", "transfer",
-          [this._getTokenName(),
+          [userToken,
            tx.publisher,
            blockchain.contractName(),
            amountStr,
@@ -866,7 +939,7 @@ class Stake {
 
   _getRealAmountStr(token, userAmountStr, days){
     var realAmount;
-    var userToken = token.split('_')[0];
+    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
 
     if(this._getPairList().indexOf(token) >= 0){
       let pool = this._getPair(token)
@@ -933,7 +1006,7 @@ class Stake {
       if(pool.pairLP !== undefined){
         tokenName = pool.tokenReward;
       }else{
-        tokenName = token.split('_')[0];
+        tokenName = token.split(LOCK_DAY_SEPARATOR)[0];
       }
 
       blockchain.callWithAuth("token.iost", "transfer",
@@ -949,7 +1022,7 @@ class Stake {
     if(type == "pair"){
       days = PAIR_LOCK_DAYS;
     }else{
-      days = token.split("_")[1] * 1;
+      days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
     }
     var realAmountStr = this._getRealAmountStr(token, userAmountStr, days);
     const userRemainingAmount = new BigNumber(userInfo[token].amount).minus(realAmountStr);
@@ -958,12 +1031,15 @@ class Stake {
       throw "Invalid remaining amount";
     }
 
-    blockchain.callWithAuth("token.iost", "transfer",
-      [tokenName,
-       blockchain.contractName(),
-       tx.publisher,
-       realAmountStr,
-       "withdraw stake token"]);
+    if(this._getIOSTList().indexOf(token) < 0){
+      // non iost vauts dont have withdrawal delay
+      blockchain.callWithAuth("token.iost", "transfer",
+        [tokenName,
+         blockchain.contractName(),
+         tx.publisher,
+         realAmountStr,
+         "withdraw stake token"]);
+    }
 
     userInfo[token].amount = userRemainingAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     userInfo[token].rewardDebt = userRemainingAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_DOWN);
@@ -979,7 +1055,7 @@ class Stake {
   _validateWithdrawalAmount(token, amount){
     // check if amount to be withdrawn is correct
     const key = token + ':' + tx.publisher;
-    const days = token.split("_")[1] * 1 * 24 * 3600;
+    const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1 * 24 * 3600;
     const today = this._getToday();
     const lockMap = this._mapGet('lockMap', tx.publisher, {});
 
@@ -1011,11 +1087,11 @@ class Stake {
     const amountStr = this._withdraw(token, amount);
     const userToken = this._getUserToken(tx.publisher); // current vault vote
 
-    if(this._getIOSTList() > -1){
-      const days = token.split("_")[1] * 1;
-      this._unvoteProducer(amountStr)
+    if(this._getIOSTList().indexOf(token) > -1){
+      const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
+      this._unvoteProducer(token, amountStr)
       // subtract user vote per vault
-      this._removeUserVote(token)
+      this._removeUserVote(token, amountStr)
     }
 
     // remove staking votes
@@ -1088,27 +1164,47 @@ class Stake {
             let producerCoefCache = {};
             let teamFeeIncrease = 0;
             let tradeInIncrease = 0;
-            let userVote = this._getUserInfo(userVotes[i]);
+            let userInfo = this._getUserInfo(userVotes[i]);
 
-            if (!userVote[pools[p]] || userVote[pools[p]] === undefined || userVote[pools[p]]['withdrawable'] > 0) continue;
+            if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined || userInfo[pools[p]]['withdrawable'] > 0) continue;
 
-            if(producerCoefCache.hasOwnProperty(this._getProducerName())){
-              producerCoef = producerCoefCache[this._getProducerName()];
-            }else{
-              producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, this._getProducerName(), 0));
-              producerCoefCache[this._getProducerName()] = producerCoef;
+            let voteMap = this._mapGet("voteMap", userVotes[i], {});
+
+            // loop through user vote mapping
+            for (let v = 0; v <= voteMap.length -1; v++){
+              if(producerCoefCache.hasOwnProperty(voteMap[v][0])){
+                producerCoef = producerCoefCache[voteMap[v][0]];
+              }else{
+                producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[v][0], 0));
+                producerCoefCache[voteMap[v][0]] = producerCoef;
+              }
+
+              const grossRewards = producerCoef.multi(voteMap[v][1] || 0);
+              let teamFee = new Float64(grossRewards.multi(STAKE_TEAMFEE).toFixed(8));
+              let netRewards = grossRewards.minus(teamFee)
+              userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
             }
-
-            const grossRewards = producerCoef.multi(userVote[pools[p]]['voteAmount'] || 0);
-            let teamFee = new Float64(grossRewards.multi(STAKE_TEAMFEE).toFixed(8));
-            let netRewards = grossRewards.minus(teamFee)
-
-            userVote[pools[p]].networkRewardPending = new Float64(userVote[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
-            this._mapPut('userInfo', userVotes[i], userVote, tx.publisher);
+            this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
           }
         }
       }
+      userWithdrawals = this._mapGet('withdrawals', userVotes[i])
+      for(let uw=0; uw <= userWithdrawals.length -1; uw++){
+          if(userWithdrawals[uw][0] < this._getNow()){
+            // transfer amount to user
+            blockchain.callWithAuth("token.iost", "transfer",
+              [IOST_TOKEN,
+               blockchain.contractName(),
+               userVotes[i],
+               userWithdrawals[uw][1].toString(),
+               "withdraw staked iost token"]);
+            //remove from the list
+            userWithdrawals.splice(uw, 1);
+          } 
+      }
+      this._mapPut('withdrawals', userVotes[i], userWithdrawals, tx.publisher)
     }
+
   }
 
   claim(token) {
@@ -1119,7 +1215,7 @@ class Stake {
     const userInfo = this._getUserInfo(tx.publisher);
     var pool;
     var type;
-    var userToken = token.split('_')[0];
+    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
 
     if(this._hasPair(token)){
       pool = this._getPair(token);
