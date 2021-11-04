@@ -1174,12 +1174,12 @@ class Stake {
             let voteMap = this._mapGet("voteMap", userVotes[i], {});
 
             // loop through user vote mapping
-            for (let v = 0; v <= voteMap.length -1; v++){
-              if(producerCoefCache.hasOwnProperty(voteMap[v][0])){
-                producerCoef = producerCoefCache[voteMap[v][0]];
+            for (let v = 0; v <= voteMap[pools[p]].length -1; v++){
+              if(producerCoefCache.hasOwnProperty(voteMap[pools[p]][v][0])){
+                producerCoef = producerCoefCache[voteMap[pools[p]][v][0]];
               }else{
-                producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[v][0], 0));
-                producerCoefCache[voteMap[v][0]] = producerCoef;
+                producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[pools[p]][v][0], 0));
+                producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
               }
 
               const grossRewards = producerCoef.multi(voteMap[v][1] || 0);
