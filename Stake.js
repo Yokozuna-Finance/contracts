@@ -309,18 +309,21 @@ class Stake {
   _voteMap(key, who, token, amount, precision) {
     const map = this._mapGet(key, who, {});
     if (!map[token]) {
-      map[token] = [];
-    }
-
-    for (let i = 0; i <= map[token].length -1; i++) {
-      if (map[token][i][0] == this._getProducerName()){
-        map[token][i][1] = new BigNumber(map[token][i][1]).plus(amount).toFixed(precision, ROUND_DOWN);
-      } else {
-        map[token].push([
-          this._getProducerName(), 
-          new BigNumber(amount).toFixed(precision, ROUND_DOWN)]);
+      map[token] = [[
+        this._getProducerName(), 
+        new BigNumber(amount).toFixed(precision, ROUND_DOWN)]];
+    }else{
+      for (let i = 0; i <= map[token].length -1; i++) {
+        if (map[token][i][0] == this._getProducerName()){
+          map[token][i][1] = new BigNumber(map[token][i][1]).plus(amount).toFixed(precision, ROUND_DOWN);
+        } else {
+          map[token].push([
+            this._getProducerName(), 
+            new BigNumber(amount).toFixed(precision, ROUND_DOWN)]);
+        }
       }
     }
+    
     this._mapPut(key, who, map, tx.publisher);
   }
 
