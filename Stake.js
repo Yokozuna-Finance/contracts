@@ -616,9 +616,17 @@ class Stake {
 
   }
 
+  _checkVaultFormat(token){
+    let days = +token.split(LOCK_DAY_SEPARATOR)[1]
+    if(!days || days < 0){
+        throw "Invalid vault format. [token]" + LOCK_DAY_SEPARATOR + "[lock days]"
+    }
+  }
+
   addPool(token, alloc, minStake, willUpdate) {
     // add single token pool to vault for staking
     this._requireOwner();
+    this._checkVaultFormat(token)
 
     // check if token exists
     var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
@@ -940,19 +948,17 @@ class Stake {
     this._addLog("stake", token, amountStr)
   }
 
-  _getRealAmountStr(token, userAmountStr, days){
+  _getRealAmountStr(token, userAmountStr, pool, days){
     var realAmount;
     var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
 
     if(this._getPairList().indexOf(token) >= 0){
-      let pool = this._getPair(token)
       userToken = pool.pairLP;
-      realAmount = this._unlock(tx.publisher, token, userAmountStr, TOKEN_PRECISION, days);
+      realAmount = this._unlock(tx.publisher, token, userAmountStr, pool.tokenPrecision, days);
     }else if (this._getTokenList().indexOf(token) >= 0) {
-      userToken = this._getTokenName();
-      realAmount = this._unlock(tx.publisher, token, userAmountStr, TOKEN_PRECISION, days);
-    } else if(this,_getIOSTList().indexOf(token) >=0){
-      realAmount = this._unlock(tx.publisher, token, userAmountStr, TOKEN_PRECISION, days);  
+      realAmount = this._unlock(tx.publisher, token, userAmountStr, pool.tokenPrecision, days);
+    } else if(this._getIOSTList().indexOf(token) >=0){
+      realAmount = this._unlock(tx.publisher, token, userAmountStr, pool.tokenPrecision, days);  
     } else {
       realAmount = userAmountStr; 
     }
@@ -961,13 +967,16 @@ class Stake {
       throw "No user balance / stake is still lock for token " + token ;
     }
 
-    //var realAmountString = realAmount.toString();
-    blockchain.callWithAuth("token.iost", "transfer",
-      [userToken,
-      blockchain.contractName(),
-      tx.publisher,
-      userAmountStr,
-      "withdraw2"]); 
+    if(this._getIOSTList().indexOf(token) < 0){
+      // non iost vauts dont have withdrawal delay
+      blockchain.callWithAuth("token.iost", "transfer",
+        [userToken,
+         blockchain.contractName(),
+         tx.publisher,
+         userAmountStr,
+         "withdraw stake token"]);
+    }
+
     return userAmountStr;
   }
 
@@ -1027,21 +1036,11 @@ class Stake {
     }else{
       days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
     }
-    var realAmountStr = this._getRealAmountStr(token, userAmountStr, days);
+    var realAmountStr = this._getRealAmountStr(token, userAmountStr, pool, days);
     const userRemainingAmount = new BigNumber(userInfo[token].amount).minus(realAmountStr);
 
     if (userRemainingAmount.lt(0)) {
       throw "Invalid remaining amount";
-    }
-
-    if(this._getIOSTList().indexOf(token) < 0){
-      // non iost vauts dont have withdrawal delay
-      blockchain.callWithAuth("token.iost", "transfer",
-        [tokenName,
-         blockchain.contractName(),
-         tx.publisher,
-         realAmountStr,
-         "withdraw stake token"]);
     }
 
     userInfo[token].amount = userRemainingAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
