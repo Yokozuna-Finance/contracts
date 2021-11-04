@@ -639,17 +639,17 @@ class Stake {
       this.updateAllPools();
     }
 
-    if (token.indexOf(IOST_TOKEN) < 0){
-      this._addToTokenList(token);
-    }else{
+    if (userToken == IOST_TOKEN){
       this._addToIOSTList(token);  
+    }else{
+      this._addToTokenList(token);
     }
     
     this._applyDeltaToTotalAlloc(alloc);
 
     this._mapPut("pool", token, {
       total: "0",
-      tokenPrecision: this._checkPrecision(this._getTokenName()),
+      tokenPrecision: this._checkPrecision(userToken),
       alloc: alloc,
       lastRewardTime: lastRewardTime,
       accPerShare: "0",
