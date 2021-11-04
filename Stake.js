@@ -724,7 +724,7 @@ class Stake {
       };
     }
     this._mapPut('userInfo', tx.publisher, userVotes, tx.publisher)
-    this._voteMap('voteMap',tx.publisher, token, amountStr, TOKEN_PRECISION)
+    this._voteMap('voteMap',tx.publisher, token, amount, TOKEN_PRECISION)
   }
 
   _removeUserVote(token, amountStr){
@@ -1188,7 +1188,7 @@ class Stake {
           }
         }
       }
-      userWithdrawals = this._mapGet('withdrawals', userVotes[i])
+      let userWithdrawals = this._mapGet('withdrawals', userVotes[i], [])
       for(let uw=0; uw <= userWithdrawals.length -1; uw++){
           if(userWithdrawals[uw][0] < this._getNow()){
             // transfer amount to user
