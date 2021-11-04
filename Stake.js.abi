@@ -54,7 +54,6 @@
             "args": [
                 "string",
                 "string",
-                "string",
                 "string"
             ],
             "amountLimit": [],

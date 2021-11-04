@@ -613,7 +613,7 @@ class Stake {
 
   }
 
-  addPool(token, lockDay, alloc, minStake, willUpdate) {
+  addPool(token, alloc, minStake, willUpdate) {
     // add single token pool to vault for staking
     this._requireOwner();
 
