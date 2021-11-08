@@ -896,7 +896,7 @@ class Stake {
 
     var pool;
     var type;
-    
+
     if(this._hasPool(token)){
       pool = this._getPool(token);
       type = 'pool';
@@ -1044,7 +1044,7 @@ class Stake {
     }
 
     if (new BigNumber(realAmount).lte(0)) {
-      throw "No user balance / stake is still lock for token " + token ;
+      throw "No user balance / stake is still lock for vault " + token ;
     }
 
     if(this._getIOSTList().indexOf(token) < 0){
@@ -1137,7 +1137,7 @@ class Stake {
   _validateWithdrawalAmount(token, amount){
     // check if amount to be withdrawn is correct
     const key = token + ':' + tx.publisher;
-    const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1 * 24 * 3600;
+    const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
     const today = this._getToday();
     const lockMap = this._mapGet('lockMap', tx.publisher, {});
 
@@ -1147,7 +1147,8 @@ class Stake {
 
     var stakeTotal = new BigNumber(0);
     for (let i = 0; i <= lockMap[token].length -1; i++) {
-      var unlockDate = this._getDate(lockMap[token][i][0] + days)
+
+      var unlockDate = lockMap[token][i][0] + days
       if(unlockDate <= today){
         stakeTotal = stakeTotal.plus(lockMap[token][i][1]);  
       }
