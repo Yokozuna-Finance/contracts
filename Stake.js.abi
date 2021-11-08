@@ -50,8 +50,17 @@
             "description": ""
         },
         {
+            "name": "setDAO",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "addPooltoVault",
             "args": [
+                "string",
                 "string",
                 "string",
                 "string",
@@ -94,6 +103,12 @@
             "description": ""
         },
         {
+            "name": "getVaultPercentage",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "updateAllocation",
             "args": [
                 "string",
@@ -105,6 +120,7 @@
         {
             "name": "addPool",
             "args": [
+                "string",
                 "string",
                 "string",
                 "string",

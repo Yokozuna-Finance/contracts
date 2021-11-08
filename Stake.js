@@ -12,6 +12,7 @@ const STAKE_TEAMFEE = 0.1;
 const LOCK_DAY_SEPARATOR = '$';
 
 const TIME_LOCK_DURATION = 12 * 3600; // 12 hours
+const VAULT_TO_POINT = 0.025 // 2.5% of votes is equivalent to 1point
 
 
 class Stake {
@@ -93,15 +94,26 @@ class Stake {
   }
 
   _getSwap(){
-    var contractID = this._get('swap',"", true);
+    return this._get('swap',"", true);
+  }
 
+
+  setDAO(contractID){
+    this._requireOwner()
+
+    // set DAO fund contractID to be used for liquidity pair staking
     if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
-    return contractID;
+
+    this._put('dao', contractID, tx.publisher)
   }
 
-  addPooltoVault(token0, token1, alloc, minStake){
+  _getDAO(){
+    return this._get('dao',"", true);
+  }
+
+  addPooltoVault(token0, token1, alloc, depositFee, minStake){
     // add liquidity pair to vault for staking
     this._requireOwner()
     const pair = JSON.parse(blockchain.call(this._getSwap(), "getPair", [token0, token1])[0]);
@@ -115,6 +127,7 @@ class Stake {
 
     let pairName = pair.token0 + "/" + pair.token1;
     alloc = +alloc || 0;
+    depositFee = +depositFee || 0;
 
     if (this._hasPair(pairName)) {
       throw "Pair vault exists";
@@ -132,7 +145,8 @@ class Stake {
       min: minStake,
       pairLP: pair.lp,
       tokenReward: this._getTokenName(),
-      apy: this._getAPY( pairName, this._getPoolAllocPercentage(pairName))
+      apy: this._getAPY( pairName, this._getPoolAllocPercentage(pairName)),
+      depositFee: depositFee
     }, 
     tx.publisher);
   }
@@ -434,10 +448,10 @@ class Stake {
 
       if (remain.gte(head[1])) {
         remain = remain.minus(head[1]);
-        unvote[head[0]] += unvote[head[1]]
+        unvote[head[0]] += head[1]
         map[token].shift();
       } else {
-        head[1] = new BigNumber(head[1]).minus(remain).toFixed(precision, ROUND_DOWN);
+        head[1] = new BigNumber(head[1]).minus(remain).toFixed(IOST_DECIMAL, ROUND_DOWN);
         unvote[head[0]] += remain
         remain = new BigNumber(0);
         map[token][0] = head;
@@ -477,7 +491,7 @@ class Stake {
   }
 
   _getVaultAmount(vault) {
-    return this._mapGet("vaultVotes", vault, "0");
+    return this._mapGet("vaultVotes", vault, 0);
   }
 
   _setVaultAmount(vault, amountStr){
@@ -491,7 +505,7 @@ class Stake {
 
   _minusVaultAmount(vault, amountStr) {
     const currentStr = this._getVaultAmount(vault);
-    this._setVaultAmount(new BigNumber(currentStr).minus(amountStr).toFixed(UNIVERSAL_PRECISION));
+    this._setVaultAmount(vault, new BigNumber(currentStr).minus(amountStr).toFixed(UNIVERSAL_PRECISION));
   }
 
   _addToken(token) {
@@ -586,6 +600,30 @@ class Stake {
     return +this._globalMapGet("token.iost", "TI" + symbol, "decimal") || 0;
   }
 
+  _getVaultPercentage(){
+    const tokenArray = this._getTokenArray();
+    var totalVotes = 0;
+    for (let i = 0; i <= tokenArray.length -1; i++) {
+      var vaultVote = +this._getVaultAmount(tokenArray[i])
+      totalVotes += vaultVote;
+    }
+
+    const votes = {};
+    var totalPoints = 0;
+    for (let i = 0; i <= tokenArray.length -1; i++){
+      var tokenVotes = this._getVote(tokenArray[i])
+      var percentage = tokenVotes/totalVotes || 0
+      var extraPoint = Math.floor(percentage / VAULT_TO_POINT)
+      totalPoints += extraPoint;
+      votes[tokenArray[i]] = [tokenVotes, percentage, extraPoint]
+    }
+
+    votes['totalVotes'] = [totalVotes, 0, totalPoints]
+
+    return votes
+  }
+  
+
   updateAllocation(vault, alloc){
     this._requireOwner();
 
@@ -623,7 +661,7 @@ class Stake {
     }
   }
 
-  addPool(token, alloc, minStake, willUpdate) {
+  addPool(token, alloc, minStake, depositFee, willUpdate) {
     // add single token pool to vault for staking
     this._requireOwner();
     this._checkVaultFormat(token)
@@ -637,6 +675,7 @@ class Stake {
     const lastRewardTime = now && now > farmDate || farmDate;
 
     alloc = +alloc || 0;
+    depositFee = +depositFee || 0 ;
     willUpdate = +willUpdate || 0;
 
     if (this._hasPool(token)) {
@@ -663,6 +702,7 @@ class Stake {
       accPerShare: "0",
       min: minStake,
       apy:"0",
+      depositFee: depositFee,
     }, 
     tx.publisher);
   }
@@ -691,9 +731,14 @@ class Stake {
     if(JSON.stringify(pool) == '{}'){
       pool = this._getPair(token)
     }
-    const totalAlloc = this._getTotalAlloc();
 
-    return new BigNumber(pool.alloc).div(totalAlloc)
+    var extraAlloc = this._getVaultPercentage();
+    var totalAlloc = this._getTotalAlloc();
+    var poolAlloc = pool.alloc + extraAlloc[token][2]
+
+    totalAlloc += extraAlloc['totalVotes'][2]
+
+    return new BigNumber(poolAlloc).div(totalAlloc)
   }
 
   _setPoolObj(key, token, pool) {
@@ -792,8 +837,13 @@ class Stake {
 
     // 1) Process token
     const multiplier = this._getMultiplier(pool.lastRewardTime, now);
-    const totalAlloc = this._getTotalAlloc();
-    const reward = new BigNumber(multiplier).times(pool.alloc).div(totalAlloc);
+    
+    var extraAlloc = this._getVaultPercentage();
+    var totalAlloc = this._getTotalAlloc();
+    var poolAlloc = pool.alloc + extraAlloc[token][2]
+    totalAlloc += extraAlloc['totalVotes'][2]
+
+    const reward = new BigNumber(multiplier).times(poolAlloc).div(totalAlloc);
 
     if (reward.gt(0)) {
       const rewardForFarmers = reward.times(0.9);
@@ -846,6 +896,7 @@ class Stake {
 
     var pool;
     var type;
+    
     if(this._hasPool(token)){
       pool = this._getPool(token);
       type = 'pool';
@@ -854,11 +905,14 @@ class Stake {
       type = 'pair'
     }
 
+    const depositFee = this._takeDepositFee(pool, amount)
+    amount = new BigNumber(amount).minus(depositFee);
+
     if(pool === undefined){
       throw "Invalid token"
     }
 
-    if(amount < pool.min){
+    if(amount.lt(pool.min)){
       throw "Amount is less than the minimum stake value";
     }
 
@@ -897,6 +951,13 @@ class Stake {
            blockchain.contractName(),
            amountStr,
            "deposit"]);
+
+      blockchain.callWithAuth("token.iost", "transfer",
+          [userToken,
+           tx.publisher,
+           this._getDAO(),
+           depositFee,
+           "deposit fee to dao contract"]);
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     } else if(this._getPairList().indexOf(token) >= 0){
       // deposit lp token
@@ -906,6 +967,12 @@ class Stake {
            blockchain.contractName(),
            amountStr,
            "deposit"]);
+      blockchain.callWithAuth("token.iost", "transfer",
+          [pool.pairLP,
+           tx.publisher,
+           this._getDAO(),
+           depositFee,
+           "deposit fee to dao contract"]);
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }else if(this._getIOSTList().indexOf(token) >=0 && type == 'pool'){
       blockchain.callWithAuth("token.iost", "transfer",
@@ -914,6 +981,12 @@ class Stake {
            blockchain.contractName(),
            amountStr,
            "deposit"]);
+      blockchain.callWithAuth("token.iost", "transfer",
+          [IOST_TOKEN,
+           tx.publisher,
+           this._getDAO(),
+           depositFee,
+           "deposit fee to dao contract"]);
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }
 
@@ -927,6 +1000,12 @@ class Stake {
     pool.total = new BigNumber(pool.total).plus(amount).toFixed(pool.tokenPrecision, ROUND_DOWN);
     this._setPoolObj(type, token, pool);
     blockchain.receipt(JSON.stringify(["deposit", token, amountStr]));
+
+    return amountStr
+  }
+
+  _takeDepositFee(vault, amountStr){
+    return new BigNumber(amountStr).times(vault.depositFee);
   }
 
   stake(token, amountStr) {
@@ -934,7 +1013,8 @@ class Stake {
       throw "Invalid vault.";
     }
 
-    this._deposit(token, amountStr);
+    // _deposit takes the depositFee 
+    var amountStr = this._deposit(token, amountStr);
     if(this._getIOSTList().indexOf(token) > -1){
       this._voteProducer(amountStr)  
       // add user vote per vault
@@ -1181,7 +1261,7 @@ class Stake {
                 producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
               }
 
-              const grossRewards = producerCoef.multi(voteMap[v][1] || 0);
+              const grossRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
               let teamFee = new Float64(grossRewards.multi(STAKE_TEAMFEE).toFixed(8));
               let netRewards = grossRewards.minus(teamFee)
               userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
