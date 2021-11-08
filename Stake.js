@@ -775,8 +775,7 @@ class Stake {
         rewardPending: "0",
         rewardDebt: "0",
         networkRewardPending: "0",
-        voteAmount: votes.plus(amount),
-        withdrawable: "0",
+        voteAmount: votes.plus(amount)
       };
     }
     this._mapPut('userInfo', tx.publisher, userVotes, tx.publisher)
@@ -931,8 +930,7 @@ class Stake {
         rewardPending: "0",
         rewardDebt: "0",
         networkRewardPending: "0",
-        voteAmount: "0",
-        withdrawable: "0",
+        voteAmount: "0"
       }
     }
 
@@ -1249,7 +1247,7 @@ class Stake {
             let tradeInIncrease = 0;
             let userInfo = this._getUserInfo(userVotes[i]);
 
-            if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined || userInfo[pools[p]]['withdrawable'] > 0) continue;
+            if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined) continue;
 
             let voteMap = this._mapGet("voteMap", userVotes[i], {});
 
