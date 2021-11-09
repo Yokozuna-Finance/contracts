@@ -103,6 +103,14 @@
             "description": ""
         },
         {
+            "name": "setVaultPercentage",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "updateAllocation",
             "args": [
                 "string",

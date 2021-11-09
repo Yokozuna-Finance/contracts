@@ -12,18 +12,28 @@ const STAKE_TEAMFEE = 0.1;
 const LOCK_DAY_SEPARATOR = '$';
 
 const TIME_LOCK_DURATION = 12 * 3600; // 12 hours
-const VAULT_TO_POINT = 0.025 // 2.5% of votes is equivalent to 1point
-
+const DEFAULT_DEPOSIT_FEE = 0.02
+const YOKOZUNA_VAULTS = [
+    YOKOZUNA_TOKEN_SYMBOL + LOCK_DAY_SEPARATOR + '3',
+    YOKOZUNA_TOKEN_SYMBOL + LOCK_DAY_SEPARATOR + '30',
+    YOKOZUNA_TOKEN_SYMBOL + LOCK_DAY_SEPARATOR + '90',
+]
 
 class Stake {
 
   init() {
     this._createToken();
     this._setDailyTokenPercentage("0.03");
+    this._setVaultPercentagePoint("0.05")
   }
 
   _setDailyTokenPercentage(value){
     this._put("dailyDistributionPercentage", value);
+  }
+
+  _setVaultPercentagePoint(value){
+    // % of votes is equivalent to  additional 1point allocation
+    this._put("vaultPercentagePoint", value);
   }
 
   can_update(data) {
@@ -44,6 +54,11 @@ class Stake {
   }
 
   setPercentage(value){
+    this._requireOwner();
+    this._setVaultPercentagePoint(value)
+  }
+
+  setVaultPercentage(value){
     this._requireOwner();
     this._setDailyTokenPercentage(value)
   }
@@ -604,8 +619,11 @@ class Stake {
     const tokenArray = this._getTokenArray();
     var totalVotes = 0;
     for (let i = 0; i <= tokenArray.length -1; i++) {
-      var vaultVote = +this._getVaultAmount(tokenArray[i])
-      totalVotes += vaultVote;
+      if(YOKOZUNA_VAULTS.indexOf(tokenArray[i]) > -1){
+        // only zuna token are included in the votes
+        var vaultVote = +this._getVaultAmount(tokenArray[i])
+        totalVotes += vaultVote;  
+      }
     }
 
     const votes = {};
@@ -613,7 +631,7 @@ class Stake {
     for (let i = 0; i <= tokenArray.length -1; i++){
       var tokenVotes = this._getVote(tokenArray[i])
       var percentage = tokenVotes/totalVotes || 0
-      var extraPoint = Math.floor(percentage / VAULT_TO_POINT)
+      var extraPoint = Math.floor(percentage / this._get("vaultPercentagePoint", 0, true)) || 0
       totalPoints += extraPoint;
       votes[tokenArray[i]] = [tokenVotes, percentage, extraPoint]
     }
@@ -935,6 +953,7 @@ class Stake {
     }
 
     var userAmount = new BigNumber(userInfo[token].amount);
+    this._updatePool(token, pool);
 
     if (userAmount.gt(0)) {
       userInfo[token].rewardPending = userAmount.times(pool.accPerShare).minus(
@@ -988,7 +1007,6 @@ class Stake {
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }
 
-    this._updatePool(token, pool);
     userAmount = userAmount.plus(amountStr);
     userInfo[token].amount = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_DOWN);
@@ -1003,7 +1021,7 @@ class Stake {
   }
 
   _takeDepositFee(vault, amountStr){
-    return new BigNumber(amountStr).times(vault.depositFee);
+    return new BigNumber(amountStr).times(vault.depositFee || DEFAULT_DEPOSIT_FEE);
   }
 
   stake(token, amountStr) {
@@ -1019,7 +1037,7 @@ class Stake {
       this._addUserVote(token, amountStr)
     }
     const userToken = this._getUserToken(tx.publisher);
-    if (userToken == token) {
+    if (userToken && YOKOZUNA_VAULTS.indexOf(token) > -1) {
       this._addVote(userToken, amountStr);
     }
     this._addVaultAmount(token, amountStr);
@@ -1176,7 +1194,7 @@ class Stake {
     }
 
     // remove staking votes
-    if (userToken == token) {
+    if (userToken && YOKOZUNA_VAULTS.indexOf(token) > -1) {
       this._minusVote(userToken, amountStr);
     }
 
@@ -1415,7 +1433,7 @@ class Stake {
     const stat = this._getProposalStat(proposalId);
 
     //update
-    const amount = +this._getUserTokenAmount(who, JSON.stringify(this._getTokenList()))[0] || 0;
+    const amount = +this._getUserTokenAmount(who, JSON.stringify(this._getTokenList())) || 0;
     if (amount > 0) {
       if (action * 1 > 0) {
         stat.approval += amount;
@@ -1462,7 +1480,6 @@ class Stake {
     }
 
     this._mapDel("proposalAction", key)
-    const stat = this._getProposalStat(proposalId);
     stat.approval = 0
     stat.disapproval = 0
     this._setProposalStat(proposalId, stat);
@@ -1483,6 +1500,12 @@ class Stake {
       throw 'Invalid token/pool.'
     }
 
+    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(this._getTokenList()));
+
+    if(amountStr * 1 <= 0){
+        throw "No staked " + YOKOZUNA_TOKEN_SYMBOL + " token to vote."
+    }
+
     const userToken = this._getUserToken(tx.publisher);
     if (token == userToken) {
       throw "Vote exists."
@@ -1494,7 +1517,6 @@ class Stake {
     
     this._setUserToken(tx.publisher, token);
 
-    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify([token]));
     if (amountStr * 1 > 0) {
       this._addVote(token, amountStr);
     }
@@ -1515,7 +1537,7 @@ class Stake {
 
     this._setUserToken(tx.publisher, "");
 
-    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify([token]));
+    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(this._getTokenList()));
     if (amountStr * 1 > 0) {
       this._minusVote(token, amountStr);
     }
