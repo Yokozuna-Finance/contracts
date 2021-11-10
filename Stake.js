@@ -1153,7 +1153,7 @@ class Stake {
   _validateWithdrawalAmount(token, amount){
     // check if amount to be withdrawn is correct
     const key = token + ':' + tx.publisher;
-    const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
+    const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1 || PAIR_LOCK_DAYS;
     const today = this._getToday();
     const lockMap = this._mapGet('lockMap', tx.publisher, {});
 
