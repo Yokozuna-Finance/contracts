@@ -148,6 +148,7 @@ class Stake {
       throw "Pair vault exists";
     }
 
+    this.updateAllPools();
     this._addPair(pairName);
     this._applyDeltaToTotalAlloc(alloc);
 
@@ -1164,7 +1165,7 @@ class Stake {
     var stakeTotal = new BigNumber(0);
     for (let i = 0; i <= lockMap[token].length -1; i++) {
 
-      var unlockDate = lockMap[token][i][0] + days
+      var unlockDate = lockMap[token][i][0] + days;
       if(unlockDate <= today){
         stakeTotal = stakeTotal.plus(lockMap[token][i][1]);  
       }
