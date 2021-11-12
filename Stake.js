@@ -10,9 +10,11 @@ const MAP_PRODUCER_COEF = "pc";
 const PAIR_LOCK_DAYS = 0;
 const STAKE_TEAMFEE = 0.1;
 const LOCK_DAY_SEPARATOR = '$';
+const BASE_HPY = 2190;
+const DAILY_HPY = 365;
 
 const TIME_LOCK_DURATION = 12 * 3600; // 12 hours
-const DEFAULT_DEPOSIT_FEE = 0.02
+const DEPOSIT_FEE_LIMIT = 0.1;
 const YOKOZUNA_VAULTS = [
     YOKOZUNA_TOKEN_SYMBOL + LOCK_DAY_SEPARATOR + '3',
     YOKOZUNA_TOKEN_SYMBOL + LOCK_DAY_SEPARATOR + '30',
@@ -20,7 +22,6 @@ const YOKOZUNA_VAULTS = [
 ]
 
 class Stake {
-
   init() {
     this._createToken();
     this._setDailyTokenPercentage("0.03");
@@ -55,12 +56,15 @@ class Stake {
 
   setPercentage(value){
     this._requireOwner();
-    this._setVaultPercentagePoint(value)
+    this.updateAllPools();
+    this._setDailyTokenPercentage(value)
   }
 
   setVaultPercentage(value){
     this._requireOwner();
-    this._setDailyTokenPercentage(value)
+    this.updateAllPools();
+    this._setVaultPercentagePoint(value)
+
   }
 
   setFarmDate(date){
@@ -70,6 +74,7 @@ class Stake {
     if(date < now){
       throw "Invalid start date."
     }
+    this.updateAllPools();
     this._put('startFarming', date, tx.publisher, false);
   }
 
@@ -143,6 +148,8 @@ class Stake {
     let pairName = pair.token0 + "/" + pair.token1;
     alloc = +alloc || 0;
     depositFee = +depositFee || 0;
+
+    this._checkLimit(depositFee, DEPOSIT_FEE_LIMIT)
 
     if (this._hasPair(pairName)) {
       throw "Pair vault exists";
@@ -255,7 +262,7 @@ class Stake {
     return this._get('producer', 'metanyx', true);
   }
 
-  _compound(r, n=365, t=1, c=1) {
+  _compound(r, n=DAILY_HPY, t=1, c=1) {
     return (1 + (r * c) / n) ** (n * t) - 1;
   }
 
@@ -446,7 +453,7 @@ class Stake {
   _unvoteProducer(token, amount) {
     // check voteMap for the votes to unvote
 
-    const map = this._mapGet("voteMap", who, {});
+    const map = this._mapGet("voteMap", tx.publisher, {});
     if (!map[token]) {
       map[token] = [];
     }
@@ -476,7 +483,7 @@ class Stake {
     }
 
     // update mapping values
-    this._mapPut("voteMap", who, map, tx.publisher);
+    this._mapPut("voteMap", tx.publisher, map, tx.publisher);
 
     for (var key in unvote){
       blockchain.callWithAuth("vote_producer.iost", "unvote", [
@@ -680,6 +687,13 @@ class Stake {
     }
   }
 
+
+  _checkLimit(value, limit){
+    if(value >= limit){
+        throw "Max limit reached."
+    }
+  }  
+
   addPool(token, alloc, minStake, depositFee, willUpdate) {
     // add single token pool to vault for staking
     this._requireOwner();
@@ -695,6 +709,9 @@ class Stake {
 
     alloc = +alloc || 0;
     depositFee = +depositFee || 0 ;
+
+    this._checkLimit(depositFee, DEPOSIT_FEE_LIMIT)
+
     willUpdate = +willUpdate || 0;
 
     if (this._hasPool(token)) {
@@ -730,19 +747,27 @@ class Stake {
     return this._getAPY(token, this._getPoolAllocPercentage(token));
   }
 
+  _getYearlyDistribution(dailyDist, rate){
+    var baseSupply = dailyDist / rate;
+    var total = 0;
+    for (let i = 0; i < DAILY_HPY; i++){
+        var dailyDistribution = baseSupply * rate;
+        baseSupply -= dailyDistribution;
+        total += dailyDistribution;
+    }
+    return new BigNumber(total);
+  }
+
   _getAPY(token, poolPercentage){
     // 
-    const supplyTotal = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()]));
-    const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
     const totalStaked = this._getVaultAmount(token);
-
     const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
+    const dailyDistribution = this._getDailyDistribution();
 
-    const yearlyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage);
+    const yearlyDistribution = this._getYearlyDistribution(dailyDistribution, dailyDistributionPercentage)
     var yearlyRewards = yearlyDistribution.times(poolPercentage);
     var simpleApy = yearlyRewards.div(totalStaked)
-
-    return this._compound(simpleApy, 2190, 1, 0.96) * 100;
+    return this._compound(simpleApy, DAILY_HPY, 1, 0.96) * 100;
   }
 
   _getPoolAllocPercentage(token){
@@ -821,10 +846,11 @@ class Stake {
     if(today == distrib[0]){
         return distrib[1]
     }else{
+        this.updateAllPools();
         const supplyTotal = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()]));
         const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
         const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
-        const dailyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage).div(365);
+        const dailyDistribution = supplyTotal.minus(supply).times(dailyDistributionPercentage);
         this._put("dailyDistribution", [today, dailyDistribution])
         return dailyDistribution
     }
@@ -886,7 +912,7 @@ class Stake {
     const farmDate = this._get('startFarming', undefined);
 
     if (!this._hasPool(token) && !this._hasPair(token)) {
-      throw "No pool for token";
+      throw "No pool for token.";
     }
     
     if(farmDate !== undefined && block.time >= farmDate){
@@ -903,13 +929,16 @@ class Stake {
       }else if(this._hasPair(token)){
         pool = this._getPair(token);  
       }
-      this._updatePool(token, pool);
+      if(pool != undefined){
+        this._updatePool(token, pool);  
+      }
+      
     });
   }
 
   _deposit(token, amount) {
     if (!this._hasPool(token) && !this._hasPair(token)) {
-      throw "No pool for token";
+      throw "No pool for token " + token;
     }
 
     var pool;
@@ -969,13 +998,15 @@ class Stake {
            blockchain.contractName(),
            amountStr,
            "deposit"]);
-
-      blockchain.callWithAuth("token.iost", "transfer",
+      if(depositFee.gt(0)){
+        blockchain.callWithAuth("token.iost", "transfer",
           [userToken,
            tx.publisher,
            this._getDAO(),
            depositFee,
-           "deposit fee to dao contract"]);
+           "deposit fee to dao contract"]);  
+      }
+      
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     } else if(this._getPairList().indexOf(token) >= 0){
       // deposit lp token
@@ -985,12 +1016,14 @@ class Stake {
            blockchain.contractName(),
            amountStr,
            "deposit"]);
-      blockchain.callWithAuth("token.iost", "transfer",
-          [pool.pairLP,
-           tx.publisher,
-           this._getDAO(),
-           depositFee,
-           "deposit fee to dao contract"]);
+      if(depositFee.gt(0)){
+          blockchain.callWithAuth("token.iost", "transfer",
+              [pool.pairLP,
+               tx.publisher,
+               this._getDAO(),
+               depositFee,
+               "deposit fee to dao contract"]);
+      }
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }else if(this._getIOSTList().indexOf(token) >=0 && type == 'pool'){
       blockchain.callWithAuth("token.iost", "transfer",
@@ -999,12 +1032,14 @@ class Stake {
            blockchain.contractName(),
            amountStr,
            "deposit"]);
-      blockchain.callWithAuth("token.iost", "transfer",
-          [IOST_TOKEN,
-           tx.publisher,
-           this._getDAO(),
-           depositFee,
-           "deposit fee to dao contract"]);
+      if(depositFee.gt(0)){
+          blockchain.callWithAuth("token.iost", "transfer",
+              [IOST_TOKEN,
+               tx.publisher,
+               this._getDAO(),
+               depositFee,
+               "deposit fee to dao contract"]);
+      }
       this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }
 
@@ -1022,7 +1057,12 @@ class Stake {
   }
 
   _takeDepositFee(vault, amountStr){
-    return new BigNumber(amountStr).times(vault.depositFee || DEFAULT_DEPOSIT_FEE);
+    if(vault.depositFee != undefined){
+        return new BigNumber(amountStr).times(vault.depositFee);    
+    }else{
+        return new BigNumber(0);
+    }
+    
   }
 
   stake(token, amountStr) {
@@ -1385,115 +1425,6 @@ class Stake {
     this._setUserInfo(tx.publisher, userInfo);
   }
 
-  addProposal(proposalId, description, expirationDays) {
-    this._requireOwner();
-    this._mapPut("proposal", proposalId, description, tx.publisher);
-
-    const now = this._getNow();
-    const days = 3600 * 24 * expirationDays
-
-    this._mapPut("proposalStat", proposalId, {
-      approval: 0,
-      disapproval: 0,
-      expiration: now + days,
-      status: 'voting'
-    }, tx.publisher);
-
-    this._mapPut("proposalVoters", proposalId, []);
-  }
-
-  changeProposal(proposalId, description) {
-    this._requireOwner();
-    this._mapPut("proposal", proposalId, description, tx.publisher);
-  }
-
-  changeProposalStatus(proposalId, status) {
-    this._requireOwner();
-    const stat = this._getProposalStat(proposalId)
-    stat.status = status
-    this._setProposalStat(proposalId, stat)
-  }
-
-  _addOneVoter(proposalId, who) {
-    const list = this._mapGet("proposalVoters", proposalId);
-    list.push(who);
-    this._mapPut("proposalVoters", proposalId, list, tx.publisher);
-  }
-
-  _getProposalStat(proposalId) {
-    return this._mapGet("proposalStat", proposalId);
-  }
-
-  _setProposalStat(proposalId, stat) {
-    this._mapPut("proposalStat", proposalId, stat, tx.publisher);
-  }
-
-  _setUserAction(proposalId, who, action) {
-    const key = proposalId + ":" + who;
-    const now = this._getNow();
-    const stat = this._getProposalStat(proposalId);
-
-    //update
-    const amount = +this._getUserTokenAmount(who, JSON.stringify(this._getTokenList())) || 0;
-    if (amount > 0) {
-      if (action * 1 > 0) {
-        stat.approval += amount;
-      } else {
-        stat.disapproval += amount;
-      }
-    }
-
-    stat.approval = +stat.approval.toFixed(UNIVERSAL_PRECISION);
-    stat.disapproval = +stat.disapproval.toFixed(UNIVERSAL_PRECISION);
-    this._setProposalStat(proposalId, stat);
-    this._mapPut("proposalAction", key, action, tx.publisher);
-  }
-
-  _hasUserAction(proposalId, who) {
-    const key = proposalId + ":" + who;
-    return storage.mapHas("proposalAction", key);
-  }
-
-  _actionOnProposal(proposalId, value) {
-    if (this._hasUserAction(proposalId, tx.publisher)) {
-      throw "Vote exists.";
-    }
-
-    const now = this._getNow();
-    const stat = this._getProposalStat(proposalId);
-    if (now > stat.expiration) {
-      throw "Proposal expired.";
-    }
-
-    this._addOneVoter(proposalId, tx.publisher);
-    this._setUserAction(proposalId, tx.publisher, value);
-  }
-
-  resetProposal(proposalId, who){
-    this._requireOwner();
-
-    const key = proposalId + ":" + who;
-    const now = this._getNow();
-    const stat = this._getProposalStat(proposalId);
-
-    if (now > stat.expiration) {
-      throw "Proposal expired.";
-    }
-
-    this._mapDel("proposalAction", key)
-    stat.approval = 0
-    stat.disapproval = 0
-    this._setProposalStat(proposalId, stat);
-  }
-
-  approveProposal(proposalId) {
-    this._actionOnProposal(proposalId, "1");
-  }
-
-  disapproveProposal(proposalId) {
-    this._actionOnProposal(proposalId, "-1");
-  }
-
   vote(token) {
     if (this._getTokenList().indexOf(token) < 0 && this._getPairList().indexOf(token) < 0 && this._getIOSTList().indexOf(token) < 0) {
       throw 'Invalid token/pool.'
@@ -1501,8 +1432,7 @@ class Stake {
       throw 'Invalid token/pool.'
     }
 
-    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(this._getTokenList()));
-
+    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(YOKOZUNA_VAULTS));
     if(amountStr * 1 <= 0){
         throw "No staked " + YOKOZUNA_TOKEN_SYMBOL + " token to vote."
     }
@@ -1517,11 +1447,11 @@ class Stake {
     }
     
     this._setUserToken(tx.publisher, token);
-
     if (amountStr * 1 > 0) {
+      this.updateAllPools();
       this._addVote(token, amountStr);
+      this._addLog("vote", token, amountStr)
     }
-    this._addLog("vote", token, amountStr)
   }
 
   unvote(token) {
@@ -1537,14 +1467,13 @@ class Stake {
     }
 
     this._setUserToken(tx.publisher, "");
-
-    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(this._getTokenList()));
+    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(YOKOZUNA_VAULTS));
     if (amountStr * 1 > 0) {
+      this.updateAllPools();
       this._minusVote(token, amountStr);
+      this._addLog("unvote", token, amountStr)
     }
-    this._addLog("unvote", token, amountStr)
   }
-
 }
 
 module.exports = Stake;

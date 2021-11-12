@@ -18,7 +18,8 @@ class Stake {
 
   init() {
     this._createToken();
-    this._setDailyTokenPercentage("0.03");
+    this._setDailyTokenPercentage("0.00061116535770447915");
+    this._setVaultPercentagePoint("0.05")
   }
 
   isLocked() {
@@ -34,6 +35,11 @@ class Stake {
 
   _setDailyTokenPercentage(value){
     this._put("dailyDistributionPercentage", value);
+  }
+
+  _setVaultPercentagePoint(value){
+    // % of votes is equivalent to  additional 1point allocation
+    this._put("vaultPercentagePoint", value);
   }
 
   setPercentage(value){

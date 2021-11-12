@@ -184,59 +184,6 @@
             "description": ""
         },
         {
-            "name": "addProposal",
-            "args": [
-                "string",
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "changeProposal",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "changeProposalStatus",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "resetProposal",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "approveProposal",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "disapproveProposal",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
             "name": "vote",
             "args": [
                 "string"
