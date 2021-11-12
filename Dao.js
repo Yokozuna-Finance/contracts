@@ -14,6 +14,20 @@ class DAO {
     return status == 1 || now < until;
   }
 
+  _get(k, d, parse) {
+    const val = storage.get(k);
+    if (val === null || val === "") {
+      return d;
+    }
+
+    if(parse === false){
+      return val;
+    }else{
+      return JSON.parse(val);
+    }
+    
+  }
+
   can_update(data) {
     return blockchain.requireAuth(blockchain.contractOwner(), "active") && !this.isLocked();
   }
