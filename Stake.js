@@ -626,12 +626,10 @@ class Stake {
   _getVaultPercentage(){
     const tokenArray = this._getTokenArray();
     var totalVotes = 0;
-    for (let i = 0; i <= tokenArray.length -1; i++) {
-      if(YOKOZUNA_VAULTS.indexOf(tokenArray[i]) > -1){
-        // only zuna token are included in the votes
-        var vaultVote = +this._getVaultAmount(tokenArray[i])
-        totalVotes += vaultVote;  
-      }
+    for (let i = 0; i <= YOKOZUNA_VAULTS.length -1; i++) {
+      // only zuna token are included in the votes
+      var staked = +this._getVaultAmount(YOKOZUNA_VAULTS[i]) || 0;
+      totalVotes += staked; 
     }
 
     const votes = {};
@@ -641,10 +639,10 @@ class Stake {
       var percentage = tokenVotes/totalVotes || 0
       var extraPoint = Math.floor(percentage / this._get("vaultPercentagePoint", 0, true)) || 0
       totalPoints += extraPoint;
-      votes[tokenArray[i]] = [tokenVotes, percentage, extraPoint]
+      votes[tokenArray[i]] = [percentage, extraPoint]
     }
 
-    votes['totalVotes'] = [totalVotes, 0, totalPoints]
+    votes['totalVotes'] = [0, totalPoints]
 
     return votes
   }
@@ -778,9 +776,9 @@ class Stake {
 
     var extraAlloc = this._getVaultPercentage();
     var totalAlloc = this._getTotalAlloc();
-    var poolAlloc = pool.alloc + extraAlloc[token][2]
+    var poolAlloc = pool.alloc + extraAlloc[token][1]
 
-    totalAlloc += extraAlloc['totalVotes'][2]
+    totalAlloc += extraAlloc['totalVotes'][1]
 
     return new BigNumber(poolAlloc).div(totalAlloc)
   }
@@ -846,7 +844,6 @@ class Stake {
     if(today == distrib[0]){
         return distrib[1]
     }else{
-        this.updateAllPools();
         const supplyTotal = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()]));
         const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
         const dailyDistributionPercentage = this._get('dailyDistributionPercentage', false);
@@ -884,8 +881,8 @@ class Stake {
     
     var extraAlloc = this._getVaultPercentage();
     var totalAlloc = this._getTotalAlloc();
-    var poolAlloc = pool.alloc + extraAlloc[token][2]
-    totalAlloc += extraAlloc['totalVotes'][2]
+    var poolAlloc = pool.alloc + extraAlloc[token][1]
+    totalAlloc += extraAlloc['totalVotes'][1]
 
     const reward = new BigNumber(multiplier).times(poolAlloc).div(totalAlloc);
 
@@ -983,7 +980,14 @@ class Stake {
     }
 
     var userAmount = new BigNumber(userInfo[token].amount);
-    this._updatePool(token, pool);
+    const distrib = this._get("dailyDistribution", [0,0])
+    const today = this._getToday();
+
+    if(today == distrib[0]){
+        this._updatePool(token, pool);
+    }else{
+        this.updateAllPools();
+    }
 
     if (userAmount.gt(0)) {
       userInfo[token].rewardPending = userAmount.times(pool.accPerShare).minus(
@@ -1143,7 +1147,15 @@ class Stake {
       return "0";
     }
 
-    this._updatePool(token, pool);
+    const distrib = this._get("dailyDistribution", [0,0])
+    const today = this._getToday();
+
+    if(today == distrib[0]){
+        this._updatePool(token, pool);
+    }else{
+        this.updateAllPools();
+    }
+
     const userAmount = new BigNumber(amount);
     const userAmountStr = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     const pending = userAmount.times(pool.accPerShare).plus(
@@ -1370,7 +1382,13 @@ class Stake {
       return;
     }
 
-    this._updatePool(token, pool);
+    const distrib = this._get("dailyDistribution", [0,0])
+    const today = this._getToday();
+    if(today == distrib[0]){
+        this._updatePool(token, pool);
+    }else{
+        this.updateAllPools();
+    }
 
     const userAmount = new BigNumber(userInfo[token].amount);
     const pending = userAmount.times(pool.accPerShare).plus(
