@@ -8,7 +8,6 @@ const PAD_PRECISION = 6;
 const UNIVERSAL_PRECISION = 12;
 const MAP_PRODUCER_COEF = "pc";
 const PAIR_LOCK_DAYS = 0;
-const STAKE_TEAMFEE = 0.1;
 const LOCK_DAY_SEPARATOR = '$';
 const BASE_HPY = 2190;
 const DAILY_HPY = 365;
@@ -1331,9 +1330,7 @@ class Stake {
                 producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
               }
 
-              const grossRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
-              let teamFee = new Float64(grossRewards.multi(STAKE_TEAMFEE).toFixed(8));
-              let netRewards = grossRewards.minus(teamFee)
+              const netRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
               userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
             }
             this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
