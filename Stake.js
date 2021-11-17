@@ -1,6 +1,7 @@
 const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
+const ROUND_UP = 0;
 const IOST_TOKEN = 'iost';
 const IOST_DECIMAL = 8;
 
@@ -1048,7 +1049,7 @@ class Stake {
 
     userAmount = userAmount.plus(amountStr);
     userInfo[token].amount = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
-    userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_DOWN);
+    userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_UP);
     this._setUserInfo(tx.publisher, userInfo);
     this._addUserBalanceList(tx.publisher);
 
@@ -1192,7 +1193,7 @@ class Stake {
     }
 
     userInfo[token].amount = userRemainingAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
-    userInfo[token].rewardDebt = userRemainingAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_DOWN);
+    userInfo[token].rewardDebt = userRemainingAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_UP);
     this._setUserInfo(tx.publisher, userInfo);
 
     pool.total = new BigNumber(pool.total).minus(realAmountStr).toFixed(pool.tokenPrecision, ROUND_DOWN);
@@ -1412,7 +1413,7 @@ class Stake {
       userInfo[token].rewardPending = "0";
     }
 
-    userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_DOWN);
+    userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_UP);
     
 
     if(this._getIOSTList().indexOf(token) >= 0 && this._hasPool(token)){
