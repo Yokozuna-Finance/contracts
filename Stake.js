@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
+const YOKOZUNA_TOKEN_SYMBOL = 'aa37';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
@@ -680,8 +680,8 @@ class Stake {
   }
 
   _checkVaultFormat(token){
-    let days = +token.split(LOCK_DAY_SEPARATOR)[1]
-    if(!days || days < 0){
+    let days = +token.split(LOCK_DAY_SEPARATOR)[1];
+    if ((!days && days != 0) || days < 0 ){
         throw "Invalid vault format. [token]" + LOCK_DAY_SEPARATOR + "[lock days]"
     }
   }
@@ -885,13 +885,14 @@ class Stake {
     var poolAlloc = pool.alloc + extraAlloc[token][1];
     totalAlloc += extraAlloc['totalVotes'][1]
 
-    const reward = new BigNumber(multiplier).times(poolAlloc).div(totalAlloc);
+    let reward = new BigNumber(multiplier).times(poolAlloc).div(totalAlloc);
 
     //check supply if we still need to mint
     const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
     if(supply.plus(reward).gt(TOTAL_SUPPLY)){
         this._put("blackholed", true)
-        return;
+        reward = new BigNumber(TOTAL_SUPPLY).minus(supply);
+        
     }
 
     if (reward.gt(0)) {
