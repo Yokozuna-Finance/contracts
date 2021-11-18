@@ -921,7 +921,7 @@ class Stake {
       throw "No pool for token.";
     }
     
-    if(farmDate !== undefined && this.getNow() >= farmDate && !blackholed){
+    if(farmDate !== undefined && this._getNow() >= farmDate && !blackholed){
       this._mint(token, pool);
     }
   }
