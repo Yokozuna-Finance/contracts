@@ -800,7 +800,7 @@ class Stake {
 
   _addWithdrawLog(token, amount){
     let userWithdrawals = this._mapGet('withdrawals', tx.publisher, []);
-    userWithdrawals.push([block.time + 3 * 24 * 3600, amount, token])
+    userWithdrawals.push([this._getNow() + 3 * 24 * 3600, amount, token])
     this._mapPut('withdrawals', tx.publisher, userWithdrawals, tx.publisher)
 
   }
@@ -910,7 +910,6 @@ class Stake {
     }
     // 3) Done.
     pool.lastRewardTime = now;
-    pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(type, token, pool);
   }
 
@@ -922,7 +921,7 @@ class Stake {
       throw "No pool for token.";
     }
     
-    if(farmDate !== undefined && block.time >= farmDate && !blackholed){
+    if(farmDate !== undefined && this.getNow() >= farmDate && !blackholed){
       this._mint(token, pool);
     }
   }
@@ -1064,6 +1063,7 @@ class Stake {
     this._addUserBalanceList(tx.publisher);
 
     pool.total = new BigNumber(pool.total).plus(amount).toFixed(pool.tokenPrecision, ROUND_DOWN);
+    pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(type, token, pool);
     blockchain.receipt(JSON.stringify(["deposit", token, amountStr]));
 
@@ -1226,6 +1226,7 @@ class Stake {
     this._setUserInfo(tx.publisher, userInfo);
 
     pool.total = new BigNumber(pool.total).minus(realAmountStr).toFixed(pool.tokenPrecision, ROUND_DOWN);
+    pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(type, token, pool);
 
     blockchain.receipt(JSON.stringify(["withdraw", token, pendingStr, realAmountStr]));
@@ -1365,6 +1366,7 @@ class Stake {
           this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
         }
       }
+
       let userWithdrawals = this._mapGet('withdrawals', userVotes[i], [])
       for(let uw=0; uw <= userWithdrawals.length -1; uw++){
           if(userWithdrawals[uw][0] < this._getNow()){
