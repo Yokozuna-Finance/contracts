@@ -1,4 +1,5 @@
 const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
+const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
@@ -307,7 +308,7 @@ class Stake {
     };
 
     blockchain.callWithAuth("token.iost", "create",
-        [YOKOZUNA_TOKEN_SYMBOL.toString(), blockchain.contractName(), 100000000, config]);
+        [YOKOZUNA_TOKEN_SYMBOL.toString(), blockchain.contractName(), TOTAL_SUPPLY, config]);
 
     this._setTokenName(token);
   }
@@ -661,7 +662,7 @@ class Stake {
     if(this._hasPool(vault)){
         pool = this._getPool(vault);
         key = 'pool';
-    }else if(this._hasPool(vault)){
+    }else if(this._hasPair(vault)){
         pool = this._getPair(vault)
         key = 'pair';
     }else{
@@ -881,10 +882,17 @@ class Stake {
     
     var extraAlloc = this._getVaultPercentage();
     var totalAlloc = this._getTotalAlloc();
-    var poolAlloc = pool.alloc + extraAlloc[token][1]
+    var poolAlloc = pool.alloc + extraAlloc[token][1];
     totalAlloc += extraAlloc['totalVotes'][1]
 
     const reward = new BigNumber(multiplier).times(poolAlloc).div(totalAlloc);
+
+    //check supply if we still need to mint
+    const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()]));
+    if(supply.plus(reward).gt(TOTAL_SUPPLY)){
+        this._put("blackholed", true)
+        return;
+    }
 
     if (reward.gt(0)) {
       const rewardForFarmers = reward.times(0.9);
@@ -907,12 +915,13 @@ class Stake {
 
   _updatePool(token, pool) {
     const farmDate = this._get('startFarming', undefined);
+    const blackholed = this._get('blackholed', false);
 
     if (!this._hasPool(token) && !this._hasPair(token)) {
       throw "No pool for token.";
     }
     
-    if(farmDate !== undefined && block.time >= farmDate){
+    if(farmDate !== undefined && block.time >= farmDate && !blackholed){
       this._mint(token, pool);
     }
   }
@@ -1311,31 +1320,29 @@ class Stake {
         }
         this._updatePool(pools[p], pool)
         if(this._getIOSTList().indexOf(pools[p]) > -1){
-          if(this._hasPool(pools[p])){
-            let producerCoef;
-            let producerCoefCache = {};
-            let teamFeeIncrease = 0;
-            let tradeInIncrease = 0;
-            let userInfo = this._getUserInfo(userVotes[i]);
+          let producerCoef;
+          let producerCoefCache = {};
+          let teamFeeIncrease = 0;
+          let tradeInIncrease = 0;
+          let userInfo = this._getUserInfo(userVotes[i]);
 
-            if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined) continue;
+          if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined) continue;
 
-            let voteMap = this._mapGet("voteMap", userVotes[i], {});
+          let voteMap = this._mapGet("voteMap", userVotes[i], {});
 
-            // loop through user vote mapping
-            for (let v = 0; v <= voteMap[pools[p]].length -1; v++){
-              if(producerCoefCache.hasOwnProperty(voteMap[pools[p]][v][0])){
-                producerCoef = producerCoefCache[voteMap[pools[p]][v][0]];
-              }else{
-                producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[pools[p]][v][0], 0));
-                producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
-              }
-
-              const netRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
-              userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
+          // loop through user vote mapping
+          for (let v = 0; v <= voteMap[pools[p]].length -1; v++){
+            if(producerCoefCache.hasOwnProperty(voteMap[pools[p]][v][0])){
+              producerCoef = producerCoefCache[voteMap[pools[p]][v][0]];
+            }else{
+              producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[pools[p]][v][0], 0));
+              producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
             }
-            this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
+
+            const netRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
+            userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
           }
+          this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
         }
       }
       let userWithdrawals = this._mapGet('withdrawals', userVotes[i], [])
