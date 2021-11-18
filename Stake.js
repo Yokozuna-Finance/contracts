@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = 'aa37';
+const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
@@ -140,7 +140,7 @@ class Stake {
     const pair = JSON.parse(blockchain.call(this._getSwap(), "getPair", [token0, token1])[0]);
     const now = this._getNow()
     const farmDate = this._get('startFarming', undefined);
-    const lastRewardTime = now && now > farmDate || farmDate;
+    const lastRewardTime = now > farmDate ? now : farmDate;
 
     if(pair === null || pair === undefined){
       throw "Invalid pair"
@@ -704,7 +704,7 @@ class Stake {
 
     const now = this._getNow();
     const farmDate = this._get('startFarming', undefined);
-    const lastRewardTime = now && now > farmDate || farmDate;
+    const lastRewardTime = now > farmDate ? now : farmDate;
 
     alloc = +alloc || 0;
     depositFee = +depositFee || 0 ;
@@ -1185,8 +1185,27 @@ class Stake {
           blockchain.contractName(),
           tx.publisher,
           pendingStr.toString(),
-          "claim pending"]);
+          "Claimed pending rewards"]);
       userInfo[token].rewardPending = "0";
+    }
+
+    if(this._getIOSTList().indexOf(token) >= 0 && this._hasPool(token)){
+      let totalClaimable = new BigNumber(userInfo[token].networkRewardPending)
+      if (totalClaimable.gt(0)){
+        totalClaimable = totalClaimable.toFixed(IOST_DECIMAL).toString()
+        blockchain.callWithAuth(
+          "token.iost",
+          "transfer",
+          [
+            IOST_TOKEN,
+            blockchain.contractName(),
+            tx.publisher,
+            totalClaimable,
+            'Claimed pending network rewards'
+          ]
+        );
+        userInfo[token].networkRewardPending = "0"
+      }
     }
 
     var days;
@@ -1423,11 +1442,10 @@ class Stake {
 
     userInfo[token].rewardDebt = userAmount.times(pool.accPerShare).toFixed(TOKEN_PRECISION, ROUND_UP);
     
-
     if(this._getIOSTList().indexOf(token) >= 0 && this._hasPool(token)){
       let totalClaimable = new BigNumber(userInfo[token].networkRewardPending)
-      totalClaimable = totalClaimable.toFixed(IOST_DECIMAL).toString()
-      if(totalClaimable > 0){
+      if(totalClaimable.gt(0)){
+        totalClaimable = totalClaimable.toFixed(IOST_DECIMAL).toString()
         blockchain.callWithAuth(
           "token.iost",
           "transfer",
