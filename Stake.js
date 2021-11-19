@@ -169,7 +169,7 @@ class Stake {
       min: minStake,
       pairLP: pair.lp,
       tokenReward: this._getTokenName(),
-      apy: this._getAPY( pairName, this._getPoolAllocPercentage(pairName)),
+      apy: 0,
       depositFee: depositFee
     }, 
     tx.publisher);
@@ -261,10 +261,6 @@ class Stake {
 
   _getProducerName(){
     return this._get('producer', 'metanyx', true);
-  }
-
-  _compound(r, n=DAILY_HPY, t=1, c=1) {
-    return (1 + (r * c) / n) ** (n * t) - 1;
   }
 
   setProducerName(name){
@@ -765,8 +761,7 @@ class Stake {
 
     const yearlyDistribution = this._getYearlyDistribution(dailyDistribution, dailyDistributionPercentage)
     var yearlyRewards = yearlyDistribution.times(poolPercentage);
-    var simpleApy = yearlyRewards.div(totalStaked)
-    return this._compound(simpleApy, DAILY_HPY, 1, 0.96) * 100;
+    return yearlyRewards.div(totalStaked) * 100
   }
 
   _getPoolAllocPercentage(token){
@@ -910,6 +905,7 @@ class Stake {
     }
     // 3) Done.
     pool.lastRewardTime = now;
+    pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(type, token, pool);
   }
 
@@ -1063,7 +1059,6 @@ class Stake {
     this._addUserBalanceList(tx.publisher);
 
     pool.total = new BigNumber(pool.total).plus(amount).toFixed(pool.tokenPrecision, ROUND_DOWN);
-    pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(type, token, pool);
     blockchain.receipt(JSON.stringify(["deposit", token, amountStr]));
 
@@ -1226,7 +1221,6 @@ class Stake {
     this._setUserInfo(tx.publisher, userInfo);
 
     pool.total = new BigNumber(pool.total).minus(realAmountStr).toFixed(pool.tokenPrecision, ROUND_DOWN);
-    pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(type, token, pool);
 
     blockchain.receipt(JSON.stringify(["withdraw", token, pendingStr, realAmountStr]));
