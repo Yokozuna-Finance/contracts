@@ -1164,8 +1164,8 @@ class Stake {
         }
     }
 
-    const userAmount = new BigNumber(amount);
-    const userAmountStr = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
+    const userAmount = new BigNumber(userInfo[token].amount);
+    const amountStr = new BigNumber(amount).toFixed(pool.tokenPrecision, ROUND_DOWN);
     const pending = userAmount.times(pool.accPerShare).plus(
         userInfo[token].rewardPending).minus(userInfo[token].rewardDebt);
     const pendingStr = pending.toFixed(TOKEN_PRECISION, ROUND_DOWN);
@@ -1212,7 +1212,7 @@ class Stake {
     }else{
       days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
     }
-    var realAmountStr = this._getRealAmountStr(token, userAmountStr, pool, days);
+    var realAmountStr = this._getRealAmountStr(token, amountStr, pool, days);
     const userRemainingAmount = new BigNumber(userInfo[token].amount).minus(realAmountStr);
 
     if (userRemainingAmount.lt(0)) {
