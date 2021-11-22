@@ -209,10 +209,6 @@ class Stake {
     }
   }
 
-  _mapDel(k, f) {
-    storage.mapDel(k, f);
-  }
-
   _put(k, v, p, stringify) {
     if(stringify === false){
       storage.put(k, v, p);
@@ -777,13 +773,6 @@ class Stake {
       throw "Invalid key."
     }
     this._mapPut(key, token, pool, tx.publisher);
-  }
-
-  _getDays(fromTime, toTime) {
-    if(toTime < fromTime){
-      return 0;
-    }
-    return new BigNumber(toTime - fromTime).div(3600 * 24);
   }
 
   _addWithdrawLog(token, amount){
