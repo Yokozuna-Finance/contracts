@@ -342,22 +342,15 @@ class Stake {
 
   _voteMap(key, who, token, amount, precision) {
     const map = this._mapGet(key, who, {});
+    const data = [
+      this._getProducerName(), 
+      new BigNumber(amount).toFixed(precision, ROUND_DOWN)
+    ]
+
     if (!map[token]) {
-      map[token] = [[
-        this._getProducerName(), 
-        new BigNumber(amount).toFixed(precision, ROUND_DOWN)]];
-    }else{
-      for (let i = 0; i <= map[token].length -1; i++) {
-        if (map[token][i][0] == this._getProducerName()){
-          map[token][i][1] = new BigNumber(map[token][i][1]).plus(amount).toFixed(precision, ROUND_DOWN);
-        } else {
-          map[token].push([
-            this._getProducerName(), 
-            new BigNumber(amount).toFixed(precision, ROUND_DOWN)]);
-        }
-      }
+      map[token] = [];
     }
-    
+    map[token].push(data);
     this._mapPut(key, who, map, tx.publisher);
   }
 
@@ -992,6 +985,11 @@ class Stake {
         this._updatePool(token, pool);
     }else{
         this.updateAllPools();
+        if(type == 'pair'){
+            pool = this._getPair(token);
+        }else{
+            pool = this._getPool(token);
+        }
     }
 
     if (userAmount.gt(0)) {
@@ -1159,6 +1157,11 @@ class Stake {
         this._updatePool(token, pool);
     }else{
         this.updateAllPools();
+        if(type == 'pair'){
+            pool = this._getPair(token);
+        }else{
+            pool = this._getPool(token);
+        }
     }
 
     const userAmount = new BigNumber(amount);
@@ -1409,6 +1412,11 @@ class Stake {
         this._updatePool(token, pool);
     }else{
         this.updateAllPools();
+        if(type == 'pair'){
+            pool = this._getPair(token);
+        }else{
+            pool = this._getPool(token);
+        }
     }
 
     const userAmount = new BigNumber(userInfo[token].amount);
