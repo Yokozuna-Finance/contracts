@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
+const YOKOZUNA_TOKEN_SYMBOL = 'aa38';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
@@ -457,11 +457,11 @@ class Stake {
 
       if (remain.gte(head[1])) {
         remain = remain.minus(head[1]);
-        unvote[head[0]] += head[1]
+        unvote[head[0]] = new BigNumber(unvote[head[0]]).plus(head[1])
         map[token].shift();
       } else {
         head[1] = new BigNumber(head[1]).minus(remain).toFixed(IOST_DECIMAL, ROUND_DOWN);
-        unvote[head[0]] += remain
+        unvote[head[0]] = new BigNumber(unvote[head[0]]).plus(remain)
         remain = new BigNumber(0);
         map[token][0] = head;
         break;
@@ -644,6 +644,8 @@ class Stake {
         throw "Invalid allocation value."
     }
 
+    this.updateAllPools()
+
     if(this._hasPool(vault)){
         pool = this._getPool(vault);
         key = 'pool';
@@ -653,8 +655,6 @@ class Stake {
     }else{
         throw "Invalid vault."
     }
-
-    this.updateAllPools()
 
     var delta = alloc - pool.alloc;
     pool.alloc = alloc;
