@@ -1,6 +1,6 @@
 const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
 const TOTAL_SUPPLY = 100000000;
-const TOKEN_PRECISION = 8;
+const TOKEN_PRECISION = 6;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
 const IOST_TOKEN = 'iost';
@@ -799,7 +799,7 @@ class Stake {
       };
     }
     this._mapPut('userInfo', tx.publisher, userVotes, tx.publisher)
-    this._voteMap('voteMap',tx.publisher, token, amount, TOKEN_PRECISION)
+    this._voteMap('voteMap',tx.publisher, token, amount, IOST_DECIMAL)
   }
 
   _removeUserVote(token, amountStr){
@@ -1002,8 +1002,6 @@ class Stake {
            depositFee,
            "deposit fee to dao contract"]);  
       }
-      
-      this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     } else if(this._getPairList().indexOf(token) >= 0){
       // deposit lp token
       blockchain.callWithAuth("token.iost", "transfer",
@@ -1020,7 +1018,6 @@ class Stake {
                depositFee,
                "deposit fee to dao contract"]);
       }
-      this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
     }else if(this._getIOSTList().indexOf(token) >=0 && type == 'pool'){
       blockchain.callWithAuth("token.iost", "transfer",
           [IOST_TOKEN,
@@ -1036,8 +1033,9 @@ class Stake {
                depositFee,
                "deposit fee to dao contract"]);
       }
-      this._logMap("lockMap", tx.publisher, token, amountStr, TOKEN_PRECISION);
+      
     }
+    this._logMap("lockMap", tx.publisher, token, amountStr, pool.tokenPrecision);
 
     userAmount = userAmount.plus(amountStr);
     userInfo[token].amount = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
@@ -1107,11 +1105,11 @@ class Stake {
         [userToken,
          blockchain.contractName(),
          tx.publisher,
-         userAmountStr,
+         realAmount,
          "withdraw stake token"]);
     }
 
-    return userAmountStr;
+    return realAmount;
   }
 
   _withdraw(token, amount) {
