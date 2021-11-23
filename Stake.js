@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = 'aa38';
+const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 8;
 const ROUND_DOWN = 1;
@@ -1077,6 +1077,7 @@ class Stake {
     if (userToken && YOKOZUNA_VAULTS.indexOf(token) > -1) {
       this._addVote(userToken, amountStr);
     }
+    this._checkUserWithdrawals(tx.publisher);
     this._addVaultAmount(token, amountStr);
     this._addLog("stake", token, amountStr)
   }
@@ -1267,12 +1268,34 @@ class Stake {
       this._minusVote(userToken, amountStr);
     }
 
+    this._checkUserWithdrawals(tx.publisher);
     this._minusVaultAmount(token, amountStr);
     this._addLog("unstake", token, amountStr)
   }
 
   _receipt() {
     blockchain.receipt(JSON.stringify(Object.values(arguments)));
+  }
+
+  _checkUserWithdrawals(user){
+    let userWithdrawals = this._mapGet('withdrawals', user, [])
+    for(let uw=0; uw <= userWithdrawals.length -1; uw++){
+      if(userWithdrawals[uw][0] < this._getNow()){
+      // transfer amount to user
+        blockchain.callWithAuth("token.iost", "transfer",
+          [IOST_TOKEN,
+            blockchain.contractName(),
+            user,
+            userWithdrawals[uw][1].toString(),
+            "withdraw staked iost token"]);
+        //remove from the list
+        userWithdrawals.splice(uw, 1);
+        uw -= 1
+      }else{
+        break;
+      }
+    }
+    this._mapPut('withdrawals', user, userWithdrawals, tx.publisher)
   }
 
   processProducerBonus() {
@@ -1353,21 +1376,7 @@ class Stake {
         }
       }
 
-      let userWithdrawals = this._mapGet('withdrawals', userVotes[i], [])
-      for(let uw=0; uw <= userWithdrawals.length -1; uw++){
-          if(userWithdrawals[uw][0] < this._getNow()){
-            // transfer amount to user
-            blockchain.callWithAuth("token.iost", "transfer",
-              [IOST_TOKEN,
-               blockchain.contractName(),
-               userVotes[i],
-               userWithdrawals[uw][1].toString(),
-               "withdraw staked iost token"]);
-            //remove from the list
-            userWithdrawals.splice(uw, 1);
-          } 
-      }
-      this._mapPut('withdrawals', userVotes[i], userWithdrawals, tx.publisher)
+      this._checkUserWithdrawals(userVotes[i]);
     }
 
   }
@@ -1455,6 +1464,7 @@ class Stake {
       }
     }
 
+    this._checkUserWithdrawals(tx.publisher);
     blockchain.receipt(JSON.stringify(["claim", token, pendingStr]));
     this._addLog("claim", token, pendingStr)
     this._setUserInfo(tx.publisher, userInfo);
