@@ -63,14 +63,6 @@ class SwapPool {
     storage.mapPut("pair", pairName, JSON.stringify(pair));
   }
 
-  buildPair(token0, token1){
-    var pair = {}
-    const pairName = token0 + "/" + token1;
-    pair.token0 = token0;
-    pair.token1 = token1;
-    this._setPair(pairName, pair);
-  }
-
   _setPairObj(pair) {
     const pairName = pair.token0 + "/" + pair.token1;
     this._setPair(pairName, pair);
