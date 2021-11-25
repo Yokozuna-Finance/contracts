@@ -308,6 +308,8 @@ class SwapPool {
 
   _swap(amounts, route, toAddress) {
     route = JSON.parse(route);
+    this._checkRouteDuplicates(route);
+
     for (let i = 0; i < route.length - 1; i++) {
       const sourceAdd = i == 0 ? JSON.parse(blockchain.contextInfo()).caller.name : this._getSwap();
       const destAdd = i == route.length - 2 ? toAddress : this._getSwap();
@@ -615,6 +617,17 @@ class SwapPool {
     }
 
     return 1;
+  }
+
+  _checkRouteDuplicates(route) {
+    let routeMap = {};
+    for (let i = 0; i < route.length; i++) {
+      if (routeMap[route[i]]) {
+        throw "Invalid route."
+      }
+      routeMap[route[i]] = true;
+    }
+
   }
 
   createPair(token0, token1) {
