@@ -11,7 +11,6 @@ const UNIVERSAL_PRECISION = 12;
 const MAP_PRODUCER_COEF = "pc";
 const PAIR_LOCK_DAYS = 0;
 const LOCK_DAY_SEPARATOR = '$';
-const BASE_HPY = 2190;
 const DAILY_HPY = 365;
 
 const TIME_LOCK_DURATION = 12 * 3600; // 12 hours
@@ -26,16 +25,17 @@ class Stake {
   init() {
     this._createToken();
     this._setDailyTokenPercentage("0.03");
-    this._setVaultPercentagePoint("0.05")
+    this._setVaultPercentagePoint("0.05", "3")
   }
 
   _setDailyTokenPercentage(value){
     this._put("dailyDistributionPercentage", value);
   }
 
-  _setVaultPercentagePoint(value){
+  _setVaultPercentagePoint(value, point){
     // % of votes is equivalent to  additional 1point allocation
     this._put("vaultPercentagePoint", value);
+    this._put("vaultExtraPoint", point);
   }
 
   can_update(data) {
@@ -61,10 +61,10 @@ class Stake {
     this._setDailyTokenPercentage(value)
   }
 
-  setVaultPercentage(value){
+  setVaultPercentage(percentage, point){
     this._requireOwner();
     this.updateAllPools();
-    this._setVaultPercentagePoint(value)
+    this._setVaultPercentagePoint(percentage, point)
 
   }
 
@@ -623,7 +623,8 @@ class Stake {
     for (let i = 0; i <= tokenArray.length -1; i++){
       var tokenVotes = this._getVote(tokenArray[i])
       var percentage = tokenVotes/totalVotes || 0
-      var extraPoint = Math.floor(percentage / this._get("vaultPercentagePoint", 0, true)) || 0
+      var multiplier = Math.floor((percentage / this._get("vaultPercentagePoint", 0, true))) || 0
+      const extraPoint = multiplier * this._get("vaultExtraPoint", 1, true);
       totalPoints += extraPoint;
       votes[tokenArray[i]] = [percentage, extraPoint]
     }
@@ -839,7 +840,6 @@ class Stake {
   _mint(token, pool) {
     // mint the token based on the current multiplier and lastRewardTime
     const now = this._getNow();
-    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
     var type = this._hasPair(token) && "pair" || "pool";
 
     if (now <= pool.lastRewardTime) {
@@ -1159,13 +1159,6 @@ class Stake {
     const pendingStr = pending.toFixed(TOKEN_PRECISION, ROUND_DOWN);
     
     if (new BigNumber(pendingStr).gt(0)) {
-      var tokenName;
-      if(pool.pairLP !== undefined){
-        tokenName = pool.tokenReward;
-      }else{
-        tokenName = token.split(LOCK_DAY_SEPARATOR)[0];
-      }
-
       blockchain.callWithAuth("token.iost", "transfer",
         [this._getTokenName(),
           blockchain.contractName(),
@@ -1220,7 +1213,6 @@ class Stake {
 
   _validateWithdrawalAmount(token, amount){
     // check if amount to be withdrawn is correct
-    const key = token + ':' + tx.publisher;
     const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1 || PAIR_LOCK_DAYS;
     const today = this._getToday();
     const lockMap = this._mapGet('lockMap', tx.publisher, {});
@@ -1255,7 +1247,6 @@ class Stake {
     const userToken = this._getUserToken(tx.publisher); // current vault vote
 
     if(this._getIOSTList().indexOf(token) > -1){
-      const days = token.split(LOCK_DAY_SEPARATOR)[1] * 1;
       this._unvoteProducer(token, amountStr)
       // subtract user vote per vault
       this._removeUserVote(token, amountStr)
@@ -1269,10 +1260,6 @@ class Stake {
     this._checkUserWithdrawals(tx.publisher);
     this._minusVaultAmount(token, amountStr);
     this._addLog("unstake", token, amountStr)
-  }
-
-  _receipt() {
-    blockchain.receipt(JSON.stringify(Object.values(arguments)));
   }
 
   _checkUserWithdrawals(user){
@@ -1350,8 +1337,6 @@ class Stake {
         if(this._getIOSTList().indexOf(pools[p]) > -1){
           let producerCoef;
           let producerCoefCache = {};
-          let teamFeeIncrease = 0;
-          let tradeInIncrease = 0;
           let userInfo = this._getUserInfo(userVotes[i]);
 
           if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined) continue;
@@ -1387,7 +1372,7 @@ class Stake {
     const userInfo = this._getUserInfo(tx.publisher);
     var pool;
     var type;
-    var userToken = token.split(LOCK_DAY_SEPARATOR)[0];
+    var userToken;
 
     if(this._hasPair(token)){
       pool = this._getPair(token);
