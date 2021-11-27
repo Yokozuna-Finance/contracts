@@ -307,9 +307,6 @@ class SwapPool {
   }
 
   _swap(amounts, route, toAddress) {
-    route = JSON.parse(route);
-    this._checkRouteDuplicates(route);
-
     for (let i = 0; i < route.length - 1; i++) {
       const sourceAdd = i == 0 ? JSON.parse(blockchain.contextInfo()).caller.name : this._getSwap();
       const destAdd = i == route.length - 2 ? toAddress : this._getSwap();
@@ -619,14 +616,15 @@ class SwapPool {
     return 1;
   }
 
-  _checkRouteDuplicates(route) {
+  _hasDuplicatePair(route) {
     let routeMap = {};
     for (let i = 0; i < route.length; i++) {
       if (routeMap[route[i]]) {
-        throw "Invalid route."
+        return true;
       }
       routeMap[route[i]] = true;
     }
+    return false;
 
   }
 
@@ -768,26 +766,77 @@ class SwapPool {
     return [amountA.toFixed(precisionA, ROUND_DOWN), amountB.toFixed(precisionB, ROUND_DOWN)];
   }
 
-  swapExactInputToken(amountIn, amountOutMin, route, toAddress) {
-    const amounts = this.getOutputAmounts(amountIn, route);
-
-    if (new BigNumber(amounts[amounts.length - 1]).lt(amountOutMin)) {
-      throw 'insufficient output amount';
+  _getPairs(routes){
+    const pairs = [];
+    for (let i = 0; i <  routes.length - 1; i++){
+      pairs.push([routes[i], routes[i+1]]);
     }
+    return pairs;
+  }
 
-    this._swap(amounts, route, toAddress);
-    return amounts;
+  swapExactInputToken(amountIn, amountOutMin, route, toAddress) {
+    route = JSON.parse(route);
+    
+    if(this._hasDuplicatePair(route)){
+      const pairs = this._getPairs(route);
+      const pairAmounts = [];
+      for (let p = 0; p < pairs.length; p++) {
+        let pairAmount = this.getOutputAmounts(amountIn, JSON.stringify(pairs[p]));
+        this._swap(pairAmount, pairs[p], toAddress);
+        pairAmounts.push(pairAmount[0]);
+        amountIn = pairAmount[1];
+      }
+
+      if (new BigNumber(amountIn).lt(amountOutMin)) {
+        throw 'insufficient output amount';
+      }
+
+      pairAmounts.push(amountIn);
+      return pairAmounts;
+             
+    }else{
+      let amounts = this.getOutputAmounts(amountIn, route);
+      
+      if (new BigNumber(amounts[amounts.length - 1]).lt(amountOutMin)) {
+        throw 'insufficient output amount';
+      }
+
+      this._swap(amounts, route, toAddress);
+      return amounts;
+    }
+    
+    
   }
 
   swapExactOutputToken(amountOut, amountInMax, route, toAddress) {
-    const amounts = this.getInputAmounts(amountOut, route);
+    route = JSON.parse(route);
 
-    if (new BigNumber(amounts[0]).gt(amountInMax)) {
-      throw 'excess input amount ' + amounts[0] + ',' + amountInMax;
+    if(this._hasDuplicatePair(route)){
+      const pairs = this._getPairs(route);
+      const pairAmounts = [];
+      for (let p = 0; p < pairs.length; p++) {
+        let pairAmount = this.getInputAmounts(amountOut, JSON.stringify(pairs[p]));
+        this._swap(pairAmount, pairs[p], toAddress);
+        pairAmounts.push(pairAmount[1]);
+        amountOut = pairAmount[0];
+      }
+
+      if (new BigNumber(amountOut).lt(amountInMax)) {
+        throw 'insufficient output amount';
+      }
+
+      pairAmounts.push(amountOut);
+      return pairAmounts;
+             
+    }else{
+      let amounts = this.getInputAmounts(amountOut, JSON.stringify(route));
+      if (new BigNumber(amounts[0]).gt(amountInMax)) {
+        throw 'excess input amount ' + amounts[0] + ',' + amountInMax;
+      }
+
+      this._swap(amounts, route, toAddress);
+      return amounts;
     }
-
-    this._swap(amounts, route, toAddress);
-    return amounts;
   }
 
   getOutputAmounts(amountIn, route) {
