@@ -695,10 +695,6 @@ class SwapPool {
 
     this._insertToAllPairs(pairName);
 
-    let providerData = [];
-    storage.mapPut(lpSymbol.toString(), 'data', JSON.stringify(providerData));
-
-    
     const config = {
       "decimal": UNIVERSAL_PRECISION,
       "canTransfer": true,
@@ -710,7 +706,7 @@ class SwapPool {
   }
 
   createPairAndAddLiquidity(token0, token1, amount0Desired, amount1Desired, toAddress) {
-    this.createPair(token0, token1, JSON.parse(blockchain.contextInfo()).caller.name);
+    this.createPair(token0, token1);
 
     if (new BigNumber(amount0Desired).gt(0) && new BigNumber(amount1Desired).gt(0)) {
       return this.addLiquidity(
