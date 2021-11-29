@@ -810,7 +810,7 @@ class SwapPool {
     if(this._hasDuplicatePair(route)){
       const pairs = this._getPairs(route);
       const pairAmounts = [];
-      for (let p = 0; p < pairs.length; p++) {
+      for (let p = pairs.length - 1; p >= 0 ; p--) {
         let pairAmount = this.getInputAmounts(amountOut, JSON.stringify(pairs[p]));
         this._swap(pairAmount, pairs[p], toAddress);
         pairAmounts.push(pairAmount[1]);
