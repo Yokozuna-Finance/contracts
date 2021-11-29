@@ -817,8 +817,8 @@ class SwapPool {
         amountOut = pairAmount[0];
       }
 
-      if (new BigNumber(amountOut).lt(amountInMax)) {
-        throw 'insufficient output amount';
+      if (new BigNumber(amountOut).gt(amountInMax)) {
+        throw 'excess input amount ' + amountOut + ',' + amountInMax;
       }
 
       pairAmounts.push(amountOut);
