@@ -307,6 +307,7 @@ class SwapPool {
   }
 
   _swap(amounts, route, toAddress) {
+    route = JSON.parse(route);
     for (let i = 0; i < route.length - 1; i++) {
       const sourceAdd = i == 0 ? JSON.parse(blockchain.contextInfo()).caller.name : this._getSwap();
       const destAdd = i == route.length - 2 ? toAddress : this._getSwap();
@@ -459,7 +460,7 @@ class SwapPool {
 
     if (_totalSupply.eq(0)) {
       liquidity = amount0.times(amount1).sqrt().minus(MINIMUM_LIQUIDITY);
-      this._mintToken(pair.lp, blockchain.contractName(), MINIMUM_LIQUIDITY);
+      this._mintToken(pair.lp, 'deadaddr', MINIMUM_LIQUIDITY);
     } else {
       liquidity = BigNumber.min(amount0.times(_totalSupply).div(pair.reserve0),
           amount1.times(_totalSupply).div(pair.reserve1));
@@ -616,18 +617,6 @@ class SwapPool {
     return 1;
   }
 
-  _hasDuplicatePair(route) {
-    let routeMap = {};
-    for (let i = 0; i < route.length - 1; i++) {
-      const pairName = this._getPairName(route[i], route[i + 1])
-      if (routeMap[pairName]) {
-        return true;
-      }
-      routeMap[pairName] = true;
-    }
-    return false;
-  }
-
   createPair(token0, token1) {
     const tokenName = this._getTokenName();
 
@@ -692,9 +681,8 @@ class SwapPool {
     }
 
     storage.mapPut("pair", pairName, JSON.stringify(data));
-
     this._insertToAllPairs(pairName);
-
+    
     const config = {
       "decimal": UNIVERSAL_PRECISION,
       "canTransfer": true,
@@ -762,49 +750,19 @@ class SwapPool {
     return [amountA.toFixed(precisionA, ROUND_DOWN), amountB.toFixed(precisionB, ROUND_DOWN)];
   }
 
-  _getPairs(routes){
-    const pairs = [];
-    for (let i = 0; i <  routes.length - 1; i++){
-      pairs.push([routes[i], routes[i+1]]);
-    }
-    return pairs;
-  }
-
   swapExactInputToken(amountIn, amountOutMin, route, toAddress) {
-    route = JSON.parse(route);
-    
-    if(this._hasDuplicatePair(route)){
-      const pairs = this._getPairs(route);
-      const pairAmounts = [];
-      for (let p = 0; p < pairs.length; p++) {
-        let pairAmount = this.getOutputAmounts(amountIn, JSON.stringify(pairs[p]));
-        this._swap(pairAmount, pairs[p], toAddress);
-        pairAmounts.push(pairAmount[0]);
-        amountIn = pairAmount[1];
-      }
+    const amounts = this.getOutputAmounts(amountIn, route);
 
-      if (new BigNumber(amountIn).lt(amountOutMin)) {
-        throw 'insufficient output amount';
-      }
-
-      pairAmounts.push(amountIn);
-      return pairAmounts;
-             
-    }else{
-      let amounts = this.getOutputAmounts(amountIn, route);
-      
-      if (new BigNumber(amounts[amounts.length - 1]).lt(amountOutMin)) {
-        throw 'insufficient output amount';
-      }
-
-      this._swap(amounts, route, toAddress);
-      return amounts;
+    if (new BigNumber(amounts[amounts.length - 1]).lt(amountOutMin)) {
+      throw 'insufficient output amount';
     }
+
+    this._swap(amounts, route, toAddress);
+    return amounts;
   }
 
   swapExactOutputToken(amountOut, amountInMax, route, toAddress) {
     const amounts = this.getInputAmounts(amountOut, route);
-    route = JSON.parse(route);
 
     if (new BigNumber(amounts[0]).gt(amountInMax)) {
       throw 'excess input amount ' + amounts[0] + ',' + amountInMax;
@@ -849,26 +807,15 @@ class SwapPool {
     const amounts = [amountOut];
     for (let i = route.length - 1; i > 0; i--) {
       const pair = this.getPair(route[i - 1], route[i]);
+
       if (!pair) {
         throw "pair not found";
       }
 
       if (pair.token0 == route[i - 1]) {
-        var amount = this._calculateInputAmount(
-          amounts[route.length - 1 - i],
-          pair.reserve0,
-          pair.reserve1,
-          pair.precision0
-        )
-        amounts.push(amount);
+        amounts.push(this._calculateInputAmount(amounts[route.length - 1 - i], pair.reserve0, pair.reserve1, pair.precision0));
       } else {
-        var amount = this._calculateInputAmount(
-          amounts[route.length - 1 - i],
-          pair.reserve1,
-          pair.reserve0,
-          pair.precision1
-        )
-        amounts.push(amount);
+        amounts.push(this._calculateInputAmount(amounts[route.length - 1 - i], pair.reserve1, pair.reserve0, pair.precision1));
       }
     }
 
