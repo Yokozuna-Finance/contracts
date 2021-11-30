@@ -618,14 +618,14 @@ class SwapPool {
 
   _hasDuplicatePair(route) {
     let routeMap = {};
-    for (let i = 0; i < route.length; i++) {
-      if (routeMap[route[i]]) {
+    for (let i = 0; i < route.length - 1; i++) {
+      const pairName = this._getPairName(route[i], route[i + 1])
+      if (routeMap[pairName]) {
         return true;
       }
-      routeMap[route[i]] = true;
+      routeMap[pairName] = true;
     }
     return false;
-
   }
 
   createPair(token0, token1) {
@@ -800,39 +800,18 @@ class SwapPool {
       this._swap(amounts, route, toAddress);
       return amounts;
     }
-    
-    
   }
 
   swapExactOutputToken(amountOut, amountInMax, route, toAddress) {
+    const amounts = this.getInputAmounts(amountOut, route);
     route = JSON.parse(route);
 
-    if(this._hasDuplicatePair(route)){
-      const pairs = this._getPairs(route);
-      const pairAmounts = [];
-      for (let p = pairs.length - 1; p >= 0 ; p--) {
-        let pairAmount = this.getInputAmounts(amountOut, JSON.stringify(pairs[p]));
-        this._swap(pairAmount, pairs[p], toAddress);
-        pairAmounts.push(pairAmount[1]);
-        amountOut = pairAmount[0];
-      }
-
-      if (new BigNumber(amountOut).gt(amountInMax)) {
-        throw 'excess input amount ' + amountOut + ',' + amountInMax;
-      }
-
-      pairAmounts.push(amountOut);
-      return pairAmounts;
-             
-    }else{
-      let amounts = this.getInputAmounts(amountOut, JSON.stringify(route));
-      if (new BigNumber(amounts[0]).gt(amountInMax)) {
-        throw 'excess input amount ' + amounts[0] + ',' + amountInMax;
-      }
-
-      this._swap(amounts, route, toAddress);
-      return amounts;
+    if (new BigNumber(amounts[0]).gt(amountInMax)) {
+      throw 'excess input amount ' + amounts[0] + ',' + amountInMax;
     }
+
+    this._swap(amounts, route, toAddress);
+    return amounts;
   }
 
   getOutputAmounts(amountIn, route) {
@@ -870,15 +849,26 @@ class SwapPool {
     const amounts = [amountOut];
     for (let i = route.length - 1; i > 0; i--) {
       const pair = this.getPair(route[i - 1], route[i]);
-
       if (!pair) {
         throw "pair not found";
       }
 
       if (pair.token0 == route[i - 1]) {
-        amounts.push(this._calculateInputAmount(amounts[route.length - 1 - i], pair.reserve0, pair.reserve1, pair.precision0));
+        var amount = this._calculateInputAmount(
+          amounts[route.length - 1 - i],
+          pair.reserve0,
+          pair.reserve1,
+          pair.precision0
+        )
+        amounts.push(amount);
       } else {
-        amounts.push(this._calculateInputAmount(amounts[route.length - 1 - i], pair.reserve1, pair.reserve0, pair.precision1));
+        var amount = this._calculateInputAmount(
+          amounts[route.length - 1 - i],
+          pair.reserve1,
+          pair.reserve0,
+          pair.precision1
+        )
+        amounts.push(amount);
       }
     }
 
