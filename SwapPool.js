@@ -7,6 +7,7 @@ const CHUNK_SIZE = 500;
 const UNIVERSAL_PRECISION = 8;
 const MINIMUM_LIQUIDITY = 0.00001;
 const UNIT_LIQUIDITY = 0.00000001;
+const HUSD_CONTRACT = "Contract3zCNX76rb3LkiAamGxCgBRCNn6C5fXJLaPPhZu2kagY3";
 
 class SwapPool {
 
@@ -44,6 +45,14 @@ class SwapPool {
   _getPair(pairName) {
     var pair = storage.mapGet("pair", pairName) || "null";
     return JSON.parse(pair);
+  }
+
+  _getTokenContract(token){
+    if (token == "husd") {
+      return HUSD_CONTRACT;
+    } else {
+      return "token.iost";
+    }
   }
 
   _hasPair(pairName) {
@@ -250,7 +259,7 @@ class SwapPool {
 
     if (amount0In.gt(0) && srcAddress != blockchain.contractName()) {
       // optimistically transfer tokens
-      blockchain.callWithAuth("token.iost", "transfer",
+      blockchain.callWithAuth(this._getTokenContract(pair.token0), "transfer",
           [pair.token0,
            srcAddress,
            blockchain.contractName(),
@@ -261,7 +270,7 @@ class SwapPool {
 
     if (amount1In.gt(0) && srcAddress != blockchain.contractName()) {
       // optimistically transfer tokens
-      blockchain.callWithAuth("token.iost", "transfer",
+      blockchain.callWithAuth(this._getTokenContract(pair.token1), "transfer",
           [pair.token1,
            srcAddress,
            blockchain.contractName(),
@@ -272,7 +281,7 @@ class SwapPool {
 
     if (amount0Out.gt(0) && dstAddress != blockchain.contractName()) {
       // optimistically transfer tokens
-      blockchain.callWithAuth("token.iost", "transfer",
+      blockchain.callWithAuth(this._getTokenContract(pair.token0), "transfer",
           [pair.token0,
            blockchain.contractName(),
            dstAddress,
@@ -283,7 +292,7 @@ class SwapPool {
 
     if (amount1Out.gt(0) && dstAddress != blockchain.contractName()) {
       // optimistically transfer tokens
-      blockchain.callWithAuth("token.iost", "transfer",
+      blockchain.callWithAuth(this._getTokenContract(pair.token1), "transfer",
           [pair.token1,
            blockchain.contractName(),
            dstAddress,
@@ -440,14 +449,14 @@ class SwapPool {
       throw "invalid input";
     }
 
-    blockchain.callWithAuth("token.iost", "transfer",
+    blockchain.callWithAuth(this._getTokenContract(pair.token0), "transfer",
         [pair.token0,
          fromAddress,
          blockchain.contractName(),
          amount0.toFixed(pair.precision0, ROUND_DOWN),
          "mint liquidity provider"]);
     this._plusTokenBalance(pair.token0, amount0, pair.precision0);
-    blockchain.callWithAuth("token.iost", "transfer",
+    blockchain.callWithAuth(this._getTokenContract(pair.token1), "transfer",
         [pair.token1,
          fromAddress,
          blockchain.contractName(),
@@ -517,7 +526,7 @@ class SwapPool {
 
     this._burnToken(pair.lp, fromAddress, liquidity);
 
-    blockchain.callWithAuth("token.iost", "transfer",
+    blockchain.callWithAuth(this._getTokenContract(pair.token0), "transfer",
         [pair.token0,
          blockchain.contractName(),
          toAddress,
@@ -525,7 +534,7 @@ class SwapPool {
          "burn liquidity provider"]);
     this._minusTokenBalance(pair.token0, amount0, pair.precision0);
 
-    blockchain.callWithAuth("token.iost", "transfer",
+    blockchain.callWithAuth(this._getTokenContract(pair.token1), "transfer",
         [pair.token1,
          blockchain.contractName(),
          toAddress,
@@ -643,8 +652,8 @@ class SwapPool {
       throw "pair exists";
     }
 
-    const totalSupply0 = +blockchain.call("token.iost", "totalSupply", [token0])[0];
-    const totalSupply1 = +blockchain.call("token.iost", "totalSupply", [token1])[0];
+    const totalSupply0 = +blockchain.call(this._getTokenContract(token0), "totalSupply", [token0])[0];
+    const totalSupply1 = +blockchain.call(this._getTokenContract(token1), "totalSupply", [token1])[0];
     if (!totalSupply0 || !totalSupply1) {
       throw "invalid token";
     }
@@ -654,7 +663,7 @@ class SwapPool {
       if(!this._getListingFee()){
         throw "listing fee not set."
       }
-      blockchain.callWithAuth("token.iost", "transfer",
+      blockchain.callWithAuth(this._getTokenContract(tokenName), "transfer",
           [tokenName,
            JSON.parse(blockchain.contextInfo()).caller.name,
            this._getFeeTo(),
