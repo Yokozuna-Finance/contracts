@@ -143,9 +143,11 @@ class Stake {
         }
 
         let pool = this._getPool(ZUNA_INVALID_POOLS[i]);
-
-        this._applyDeltaToTotalAlloc(-pool.alloc)
-        storage.mapDel("pool", ZUNA_INVALID_POOLS[i]);
+        if(pool){
+          this._applyDeltaToTotalAlloc(-pool.alloc)
+          storage.mapDel("pool", ZUNA_INVALID_POOLS[i]);    
+        }
+        
     }
   }
 
