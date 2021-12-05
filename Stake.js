@@ -119,6 +119,8 @@ class Stake {
   }
 
   removeInvalidVaults(){
+    this._requireOwner();
+
     const ZUNA_INVALID_POOLS = [
         'zuna_90',
         'zuna_30',
