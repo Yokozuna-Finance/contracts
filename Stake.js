@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
+const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 6;
 const ROUND_DOWN = 1;
@@ -116,6 +116,35 @@ class Stake {
 
   _getSwap(){
     return this._get('swap',"", true);
+  }
+
+  removeInvalidVaults(){
+    const ZUNA_INVALID_POOLS = [
+        'zuna_90',
+        'zuna_30',
+        'zuna_3'
+    ];
+
+    for(let i = 0; i < ZUNA_INVALID_POOLS.length; i++){
+        let pools = this._getTokenArray();
+        let idx = pools.indexOf(ZUNA_INVALID_POOLS[i]);
+        if(idx > -1){
+            pools.splice(idx, 1)
+            storage.put("tokenArray", JSON.stringify(pools), tx.publisher);  
+        }
+
+        let tokenList = this._getTokenList();
+        let tidx = tokenList.indexOf(ZUNA_INVALID_POOLS[i]);
+        if(tidx > -1){
+            tokenList.splice(tidx, 1)
+            storage.put("tokenList", JSON.stringify(tokenList), tx.publisher);  
+        }
+
+        let pool = this._getPool(ZUNA_INVALID_POOLS[i]);
+
+        this._applyDeltaToTotalAlloc(-pool.alloc)
+        storage.mapDel("pool", ZUNA_INVALID_POOLS[i]);
+    }
   }
 
 
@@ -635,10 +664,11 @@ class Stake {
   }
   
 
-  updateAllocation(vault, alloc){
+  updateAllocation(vault, alloc, depositFee){
     this._requireOwner();
 
     alloc = +alloc;
+    depositFee = +depositFee || 0 ;
     var key;
     var pool;
     if(!alloc || alloc < 0){
@@ -659,6 +689,7 @@ class Stake {
 
     var delta = alloc - pool.alloc;
     pool.alloc = alloc;
+    pool.depositFee = depositFee;
 
     this._applyDeltaToTotalAlloc(delta);
     this._setPoolObj(key, vault, pool)

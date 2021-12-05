@@ -115,6 +115,7 @@
             "name": "updateAllocation",
             "args": [
                 "string",
+                "string",
                 "string"
             ],
             "amountLimit": [],
@@ -172,6 +173,12 @@
         },
         {
             "name": "processProducerBonus",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "removeInvalidVaults",
             "args": [],
             "amountLimit": [],
             "description": ""
