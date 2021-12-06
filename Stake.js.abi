@@ -178,7 +178,7 @@
             "description": ""
         },
         {
-            "name": "removeInvalidVaults",
+            "name": "updateIOST0PoolTotal",
             "args": [],
             "amountLimit": [],
             "description": ""

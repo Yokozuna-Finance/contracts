@@ -118,40 +118,6 @@ class Stake {
     return this._get('swap',"", true);
   }
 
-  removeInvalidVaults(){
-    this._requireOwner();
-
-    const ZUNA_INVALID_POOLS = [
-        'zuna_90',
-        'zuna_30',
-        'zuna_3'
-    ];
-
-    for(let i = 0; i < ZUNA_INVALID_POOLS.length; i++){
-        let pools = this._getTokenArray();
-        let idx = pools.indexOf(ZUNA_INVALID_POOLS[i]);
-        if(idx > -1){
-            pools.splice(idx, 1)
-            storage.put("tokenArray", JSON.stringify(pools), tx.publisher);  
-        }
-
-        let tokenList = this._getTokenList();
-        let tidx = tokenList.indexOf(ZUNA_INVALID_POOLS[i]);
-        if(tidx > -1){
-            tokenList.splice(tidx, 1)
-            storage.put("tokenList", JSON.stringify(tokenList), tx.publisher);  
-        }
-
-        let pool = this._getPool(ZUNA_INVALID_POOLS[i]);
-        if(pool){
-          this._applyDeltaToTotalAlloc(-pool.alloc)
-          storage.mapDel("pool", ZUNA_INVALID_POOLS[i]);    
-        }
-        
-    }
-  }
-
-
   setDAO(contractID){
     this._requireOwner()
 
@@ -1316,16 +1282,21 @@ class Stake {
     let userWithdrawals = this._mapGet('withdrawals', user, [])
     for(let uw=0; uw <= userWithdrawals.length -1; uw++){
       if(userWithdrawals[uw][0] < this._getNow()){
-      // transfer amount to user
-        blockchain.callWithAuth("token.iost", "transfer",
-          [IOST_TOKEN,
-            blockchain.contractName(),
-            user,
-            userWithdrawals[uw][1].toString(),
-            "withdraw staked iost token"]);
+
+        // transfer amount to user
+        if(userWithdrawals[uw][1]){
+          blockchain.callWithAuth("token.iost", "transfer",
+            [IOST_TOKEN,
+              blockchain.contractName(),
+              user,
+              userWithdrawals[uw][1].toString(),
+              "withdraw staked iost token"]);
+        }
         //remove from the list
         userWithdrawals.splice(uw, 1);
-        uw -= 1
+        uw -= 1;    
+        
+        
       }else{
         break;
       }
@@ -1530,6 +1501,31 @@ class Stake {
       this._addVote(token, amountStr);
       this._addLog("vote", token, amountStr)
     }
+  }
+
+
+  updateIOST0PoolTotal(){
+    this._requireOwner();
+
+    const userVotes = this._get('userBalanceList', []);
+    const vault = 'iost$0';
+    var total = new BigNumber(0);
+    for(let i = 0; i < userVotes.length; i++){
+        const userInfo = this._getUserInfo(userVotes[i]);
+        if(userInfo[vault]){
+            var amount = +userInfo[vault].amount || 0;    
+            total = total.plus(amount)
+        }
+    }
+
+    // update pool total
+    var pool = this._getPool(vault);
+    if(pool){
+        pool.total = total.toFixed(pool.tokenPrecision, ROUND_DOWN)
+        this._setPoolObj("pool", vault, pool);
+        this._setVaultAmount(vault, total)
+    }
+    
   }
 
   unvote(token) {
