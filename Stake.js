@@ -673,6 +673,8 @@ class Stake {
 
     alloc = +alloc;
     depositFee = +depositFee || 0 ;
+    this._checkLimit(depositFee, DEPOSIT_FEE_LIMIT)
+
     var key;
     var pool;
     if(!alloc || alloc < 0){
