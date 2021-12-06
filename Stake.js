@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
+const YOKOZUNA_TOKEN_SYMBOL = 'aa57';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 6;
 const ROUND_DOWN = 1;
@@ -1097,6 +1097,12 @@ class Stake {
   }
 
   stake(token, amountStr) {
+    var amount = +amountStr || 0;
+
+    if (amount <= 0){
+        throw "Invalid amount.";
+    }
+
     if (this._getTokenList().indexOf(token) < 0 && this._getIOSTList().indexOf(token) < 0 && this._getPairList().indexOf(token) < 0) {
       throw "Invalid vault.";
     }
@@ -1273,6 +1279,13 @@ class Stake {
   }
 
   unstake(token, amount) {
+    // ensure amount is an integer else set it to 0
+    amount = +amount || 0;
+
+    if (amount <= 0){
+        throw "Invalid amount.";
+    } 
+
     // Stake withdrawal
     if ((this._getTokenList().indexOf(token) < 0) && this._getPairList().indexOf(token) < 0 && this._getIOSTList().indexOf(token) < 0) {
       throw "Token " + token + " is invalid.";
