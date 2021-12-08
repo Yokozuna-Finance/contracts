@@ -1294,9 +1294,7 @@ class Stake {
         }
         //remove from the list
         userWithdrawals.splice(uw, 1);
-        uw -= 1;    
-        
-        
+        uw -= 1;      
       }else{
         break;
       }
@@ -1341,48 +1339,87 @@ class Stake {
       blockchain.contractName()
     ]);
 
-    // distribute to users
-    const userVotes = this._get('userBalanceList', []);
+  }
+
+  distributeProducerBonus(usersPerRun){
+    usersPerRun = +usersPerRun || 50;
+    // get the last userProcessed
+    let lastUserProcessed = this._get('lup');
+    let userVotes = this._get('userBalanceList', []);
+    const userLength = userVotes.length;
+    let lastUser = userVotes.slice(-1)[0]
+    let idx = 0;
+
+    if (lastUserProcessed){
+      idx = userVotes.indexOf(lastUserProcessed) + 1;
+    }
+    userVotes = userVotes.slice(idx, idx + usersPerRun);
     const userCount = userVotes.length;
-    const pools = this._getTokenArray();
+    const pools = this._getIOSTList();
 
+    this.updateAllPools();
     for (let i = 0; i <= userCount -1; i++) {
+      let userInfo = this._getUserInfo(userVotes[i]);
+      let voteMap = this._mapGet("voteMap", userVotes[i], {});
+
       for (let p = 0; p <= pools.length -1; p++){
-        var pool;
-        if(this._hasPool(pools[p])){
-          pool = this._getPool(pools[p]);
-        }else if(this._hasPair(pools[p])){
-          pool = this._getPair(pools[p]);  
-        }
-        this._updatePool(pools[p], pool)
-        if(this._getIOSTList().indexOf(pools[p]) > -1){
-          let producerCoef;
-          let producerCoefCache = {};
-          let userInfo = this._getUserInfo(userVotes[i]);
+        var pool = this._getPool(pools[p]);
+        let producerCoef;
+        let producerCoefCache = {};
+        
+        if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined) continue;
 
-          if (!userInfo[pools[p]] || userInfo[pools[p]] === undefined) continue;
-
-          let voteMap = this._mapGet("voteMap", userVotes[i], {});
-
-          // loop through user vote mapping
-          for (let v = 0; v <= voteMap[pools[p]].length -1; v++){
-            if(producerCoefCache.hasOwnProperty(voteMap[pools[p]][v][0])){
-              producerCoef = producerCoefCache[voteMap[pools[p]][v][0]];
-            }else{
-              producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[pools[p]][v][0], 0));
-              producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
-            }
-
-            const netRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
-            userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
+        // loop through user vote mapping
+        for (let v = 0; v <= voteMap[pools[p]].length -1; v++){
+          if(producerCoefCache.hasOwnProperty(voteMap[pools[p]][v][0])){
+            producerCoef = producerCoefCache[voteMap[pools[p]][v][0]];
+          }else{
+            producerCoef = new Float64(this._mapGet(MAP_PRODUCER_COEF, voteMap[pools[p]][v][0], 0));
+            producerCoefCache[voteMap[pools[p]][v][0]] = producerCoef;
           }
-          this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
-        }
-      }
 
-      this._checkUserWithdrawals(userVotes[i]);
+          const netRewards = producerCoef.multi(voteMap[pools[p]][v][1] || 0);
+          userInfo[pools[p]].networkRewardPending = new Float64(userInfo[pools[p]].networkRewardPending || 0).plus(netRewards).toFixed(8);
+        }
+        this._mapPut('userInfo', userVotes[i], userInfo, tx.publisher);
+      }
+      lastUserProcessed = userVotes[i];
+    }
+    if (lastUserProcessed == lastUser){
+        this._put('lup', '');
+    } else {
+        this._put('lup', lastUserProcessed);
+    }
+    blockchain.receipt(JSON.stringify(["Processed " + (idx + userCount) + '/' + userLength]))
+  }
+
+  checkUserWithdrawals(usersPerRun){
+    usersPerRun = +usersPerRun || 50;
+    // get the last userProcessed
+    let lastUserProcessed = this._get('ludp');
+    let userList = this._get('userBalanceList', []);
+    const userLength = userList.length;
+    let lastUser = userList.slice(-1)[0]
+    let idx = 0;
+
+    if (lastUserProcessed){
+      idx = userList.indexOf(lastUserProcessed) + 1;
+    }
+    userList = userList.slice(idx, idx + usersPerRun);
+    const userCount = userList.length;
+    
+    for (let i = 0; i <= userCount -1; i++) {
+      this._checkUserWithdrawals(userList[i]);
+      lastUserProcessed = userList[i];
     }
 
+    if (lastUserProcessed == lastUser){
+        this._put('ludp', '');
+    } else {
+        this._put('ludp', lastUserProcessed)
+    }
+    blockchain.receipt(JSON.stringify(["Processed " + (idx + userCount) + '/' + userLength]))
+    
   }
 
   claim(token) {
@@ -1501,31 +1538,6 @@ class Stake {
       this._addVote(token, amountStr);
       this._addLog("vote", token, amountStr)
     }
-  }
-
-
-  updateIOST0PoolTotal(){
-    this._requireOwner();
-
-    const userVotes = this._get('userBalanceList', []);
-    const vault = 'iost$0';
-    var total = new BigNumber(0);
-    for(let i = 0; i < userVotes.length; i++){
-        const userInfo = this._getUserInfo(userVotes[i]);
-        if(userInfo[vault]){
-            var amount = +userInfo[vault].amount || 0;    
-            total = total.plus(amount)
-        }
-    }
-
-    // update pool total
-    var pool = this._getPool(vault);
-    if(pool){
-        pool.total = total.toFixed(pool.tokenPrecision, ROUND_DOWN)
-        this._setPoolObj("pool", vault, pool);
-        this._setVaultAmount(vault, total)
-    }
-    
   }
 
   unvote(token) {
