@@ -1284,7 +1284,7 @@ class Stake {
       if(userWithdrawals[uw][0] < this._getNow()){
 
         // transfer amount to user
-        if(userWithdrawals[uw][1]){
+        if(userWithdrawals[uw][1] > 0){
           blockchain.callWithAuth("token.iost", "transfer",
             [IOST_TOKEN,
               blockchain.contractName(),
