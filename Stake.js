@@ -834,6 +834,15 @@ class Stake {
     }
   }
 
+  setDailyDistribution(dailyDistribution){
+    this._requireOwner();
+
+    dailyDistribution = +dailyDistribution || 0
+    const today = this._getToday();
+
+    this._put("dailyDistribution", [today, dailyDistribution.toFixed(TOKEN_PRECISION)])
+  }
+
   _getMultiplier(fromTime, toTime) {
     const dailyDistribution = this._getDailyDistribution();
     return new BigNumber(dailyDistribution).times(toTime - fromTime).div(3600 * 24);
