@@ -33,6 +33,14 @@
             "description": ""
         },
         {
+            "name": "setDailyDistribution",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "issueToken",
             "args": [
                 "string",
