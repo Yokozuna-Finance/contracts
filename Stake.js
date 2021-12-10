@@ -63,9 +63,8 @@ class Stake {
 
   setVaultPercentage(percentage, point){
     this._requireOwner();
-    this.updateAllPools();
+    // this.updateAllPools();
     this._setVaultPercentagePoint(percentage, point)
-
   }
 
   setFarmDate(date){
