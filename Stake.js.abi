@@ -25,31 +25,6 @@
             "description": ""
         },
         {
-            "name": "setFarmDate",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "setDailyDistribution",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "issueToken",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
             "name": "setSwap",
             "args": [
                 "string"

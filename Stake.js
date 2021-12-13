@@ -67,41 +67,6 @@ class Stake {
     this._setVaultPercentagePoint(percentage, point)
   }
 
-  setFarmDate(date){
-    this._requireOwner();
-
-    const now = this._getNow().toString();
-    if(date < now){
-      throw "Invalid start date."
-    }
-    this.updateAllPools();
-    this._put('startFarming', date, tx.publisher, false);
-  }
-
-  issueToken(toAddress, amount){
-    this._requireOwner();
-
-    // We can only issue token if start farming date is defined, 
-    // farming is not started yet
-    // initial allocation is less than 40% to the total token supply
-    const farmDate = this._get('startFarming', undefined);
-    const now = this._getNow();
-
-    const allowableMaxIssued = new BigNumber(blockchain.call("token.iost", "totalSupply", [this._getTokenName()])
-      ).times(0.4);
-    const supply = new BigNumber(blockchain.call("token.iost", "supply", [this._getTokenName()])).plus(amount);
-
-    if(farmDate === undefined){
-      throw "Date start of farming should be defined."
-    }else if(now > farmDate){
-      throw "Cannot issue token when farming already started."
-    }else if(supply > allowableMaxIssued){
-      throw "Max allowable intial allocation reached."
-    }
-
-    blockchain.callWithAuth("token.iost", "issue", [this._getTokenName(), toAddress, amount]);
-  }
-
   setSwap(contractID){
     this._requireOwner()
 
@@ -137,8 +102,7 @@ class Stake {
     this._requireOwner()
     const pair = JSON.parse(blockchain.call(this._getSwap(), "getPair", [token0, token1])[0]);
     const now = this._getNow()
-    const farmDate = this._get('startFarming', undefined);
-    const lastRewardTime = now > farmDate ? now : farmDate;
+    const lastRewardTime = now;
 
     if(pair === null || pair === undefined){
       throw "Invalid pair"
@@ -691,8 +655,7 @@ class Stake {
     const tokenSupply = new BigNumber(blockchain.call("token.iost", "totalSupply", [userToken]));
 
     const now = this._getNow();
-    const farmDate = this._get('startFarming', undefined);
-    const lastRewardTime = now > farmDate ? now : farmDate;
+    const lastRewardTime = now;
 
     alloc = +alloc || 0;
     depositFee = +depositFee || 0 ;
@@ -834,15 +797,6 @@ class Stake {
     }
   }
 
-  setDailyDistribution(dailyDistribution){
-    this._requireOwner();
-
-    dailyDistribution = +dailyDistribution || 0
-    const today = this._getToday();
-
-    this._put("dailyDistribution", [today, dailyDistribution.toFixed(TOKEN_PRECISION)])
-  }
-
   _getMultiplier(fromTime, toTime) {
     const dailyDistribution = this._getDailyDistribution();
     return new BigNumber(dailyDistribution).times(toTime - fromTime).div(3600 * 24);
@@ -903,14 +857,13 @@ class Stake {
   }
 
   _updatePool(token, pool) {
-    const farmDate = this._get('startFarming', undefined);
     const blackholed = this._get('blackholed', false);
 
     if (!this._hasPool(token) && !this._hasPair(token)) {
       throw "No pool for token.";
     }
     
-    if(farmDate !== undefined && this._getNow() >= farmDate && !blackholed){
+    if(!blackholed){
       this._mint(token, pool);
     }
   }
