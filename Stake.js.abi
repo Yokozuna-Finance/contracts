@@ -58,6 +58,15 @@
             "description": ""
         },
         {
+            "name": "getUserTokenAmount",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "addPooltoVault",
             "args": [
                 "string",

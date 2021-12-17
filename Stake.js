@@ -397,7 +397,7 @@ class Stake {
     return this._mapGet("userInfo", who, {});
   }
 
-  _getUserTokenAmount(who, tokenList) {
+  getUserTokenAmount(who, tokenList) {
     tokenList = JSON.parse(tokenList);
 
     var total = new BigNumber(0);
@@ -1517,7 +1517,7 @@ class Stake {
       throw 'Invalid token/pool.'
     }
 
-    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(YOKOZUNA_VAULTS));
+    const amountStr = this.getUserTokenAmount(tx.publisher, JSON.stringify(YOKOZUNA_VAULTS));
     if(amountStr * 1 <= 0){
         throw "No staked " + YOKOZUNA_TOKEN_SYMBOL + " token to vote."
     }
@@ -1552,7 +1552,7 @@ class Stake {
     }
 
     this._setUserToken(tx.publisher, "");
-    const amountStr = this._getUserTokenAmount(tx.publisher, JSON.stringify(YOKOZUNA_VAULTS));
+    const amountStr = this.getUserTokenAmount(tx.publisher, JSON.stringify(YOKOZUNA_VAULTS));
     if (amountStr * 1 > 0) {
       this.updateAllPools();
       this._minusVote(token, amountStr);
