@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = 'aa60';
+const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
 const LOCK_DAY_SEPARATOR = '$';
 const EXPIRY_DAYS = 3;
 const MINIMUM_BASE_RATE = 0.5;
@@ -115,7 +115,7 @@ class Governance {
 
   _checkDescription(description){
     if (description.length > 512) {
-        throw 'Subject too long, 128 chars only allowed'
+        throw 'Subject too long, 512 chars only allowed'
     }
   }
 
