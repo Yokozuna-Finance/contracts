@@ -5,6 +5,7 @@ const ROUND_DOWN = 1;
 const ROUND_UP = 0;
 const IOST_TOKEN = 'iost';
 const IOST_DECIMAL = 8;
+const LOG_LIMIT = 500;
 
 const PAD_PRECISION = 6;
 const UNIVERSAL_PRECISION = 12;
@@ -184,6 +185,8 @@ class Stake {
       "timestamp": now,
       "hash": tx.hash
     })
+
+    transLog = transLog.slice(-LOG_LIMIT);
     this._mapPut("stakingLog", key, transLog, tx.publisher)
   }
 
@@ -1058,7 +1061,15 @@ class Stake {
     }else{
         return new BigNumber(0);
     }
-    
+  }
+
+  clearLog(vault){
+    const tokenArray = this._getTokenArray();
+    if(tokenArray.indexOf(vault) < 0){
+        throw "Invalid vault."
+    }
+    const key = vault + ":" + tx.publisher;
+    this._mapPut("stakingLog", key, [], tx.publisher)
   }
 
   stake(token, amountStr) {
