@@ -1517,7 +1517,6 @@ class Stake {
 
     this._checkUserWithdrawals(tx.publisher);
     blockchain.receipt(JSON.stringify(["claim", token, pendingStr]));
-    this._addLog("claim", token, pendingStr)
     this._setUserInfo(tx.publisher, userInfo);
   }
 
