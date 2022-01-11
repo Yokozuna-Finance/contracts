@@ -107,16 +107,18 @@
             "description": ""
         },
         {
-            "name": "getCanUnlock",
+            "name": "transfer",
             "args": [
-                "string",
                 "string",
                 "string",
                 "string",
                 "string",
                 "string"
             ],
-            "amountLimit": [],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }],
             "description": ""
         },
         {

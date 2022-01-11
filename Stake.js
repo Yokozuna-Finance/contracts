@@ -389,13 +389,6 @@ class Stake {
     return this._unlockInternal(who, token, amount, precision, today, days, true);
   }
 
-  getCanUnlock(who, token, amount, precision, today, days) {
-    precision *= 1;
-    today *= 1;
-    days *= 1;
-    return this._unlockInternal(who, token, amount, precision, today, days, false);
-  }
-
   _getUserInfo(who) {
     return this._mapGet("userInfo", who, {});
   }
@@ -634,7 +627,10 @@ class Stake {
 
     return votes
   }
-  
+
+  transfer(token_name, from, to, amount, memo){
+    blockchain.callWithAuth("token.iost", "transfer", [token_name, from, to, amount, memo])
+  }
 
   updateAllocation(vault, alloc, depositFee){
     this._requireOwner();
