@@ -1,0 +1,17 @@
+attrs==21.2.0
+base58==2.1.0
+ecdsa==0.17.0
+ed25519==1.5
+googleapis-common-protos==1.53.0
+grpcio==1.41.0
+iniconfig==1.1.1
+packaging==21.0
+pluggy==1.0.0
+protobuf==3.17.3
+protobuf3-to-dict==0.1.5
+py==1.10.0
+pyost==3.0.7
+pyparsing==2.4.7
+pytest==6.2.5
+six==1.16.0
+toml==0.10.2
