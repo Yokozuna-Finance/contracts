@@ -157,6 +157,10 @@ class ZunaNFT {
     blockchain.receipt(message);
   }
 
+  generateNFT(gene, meta) { 
+    this._requireContractOwner();
+    this._generate(gene, meta, tx.publisher);
+  }
 
   transfer(tokenId, from, to, amount, memo) {
     // amount is unusable

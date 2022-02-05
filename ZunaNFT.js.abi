@@ -17,6 +17,15 @@
             "description": ""
         },
         {
+            "name": "generateNFT",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "transfer",
             "args": [
                 "string",
