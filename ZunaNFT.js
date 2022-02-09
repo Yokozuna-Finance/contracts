@@ -158,7 +158,7 @@ class ZunaNFT {
   }
 
   generateNFT(gene, meta) { 
-    this._requireContractOwner();
+    this._requireOwner();
     this._generate(gene, meta, tx.publisher);
   }
 
