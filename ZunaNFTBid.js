@@ -125,6 +125,22 @@ class ZunaNFTBid {
     throw new Error("Get mput key: " + kn + " is empty" );
   }
 
+  _msg(code, msg, obj) {
+    var success;
+    if (code == 200) {
+      success = true;
+    } else {
+      success = false;
+    }
+    var message = {
+      code: code,
+      message: msg,
+      success: success,
+      object: obj
+    }
+    return message;
+  }
+
   _globalHas(contract, key){
     return storage.globalHas(contract, key);
   }
@@ -582,6 +598,17 @@ class ZunaNFTBid {
       throw "NFT ContractID doest not exist!";
     }
     this._put(NFT_CONTRACT_ID, contract, tx.publisher);
+  }
+
+  rmOrder(orderId) {
+     this._requireAuth();
+     this._unsale(orderId);
+     return this._msg(200 , "success");
+  }
+
+  rmStorage(key){
+    this._requireOwner();
+    this._remove(key);
   }
 
 }
