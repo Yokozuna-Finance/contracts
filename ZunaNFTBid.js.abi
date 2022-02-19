@@ -53,6 +53,20 @@
                 "string"
             ],
             "amountLimit": []
+        },
+        {
+            "name": "rmOrder",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "rmStorage",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
         }
     ]
 }

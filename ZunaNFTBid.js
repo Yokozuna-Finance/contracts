@@ -1,6 +1,6 @@
-const ZUNA_NFT_CONTRACT_ID = "NFTCONTRACTID";
-const ZUNA_NFT_CONTRACT_KEY  = "zid";
-const ZUNA_NFT_KEY = "znft.";
+const NFT_CONTRACT_ID = "NFTCONTRACTID";
+const NFT_CONTRACT_KEY  = "zid";
+const NFT_KEY = "znft.";
 const ZUNAFEE = 'adminfee';
 const USER_MAX_ORDER_COUNT = 30;
 const ORDER_ID_KEY = "ORDERID";
@@ -16,7 +16,6 @@ const NFT_DATA_BASE = "NFTDATA.";
 const expiry = 20;
 const extendTime = 20;
 const lockTime = 259200;
-const tokenPrefix = "zuna_token_";
 
 const fixed = 2;
 const fixFee = 5;
@@ -126,6 +125,17 @@ class ZunaNFTBid {
     throw new Error("Get mput key: " + kn + " is empty" );
   }
 
+  _msg(code, msg, obj) {
+    const success = (code == 200) ? true: false;
+    const message = {
+      code: code,
+      message: msg,
+      success: success,
+      object: obj
+    }
+    return message;
+  }
+
   _globalHas(contract, key){
     return storage.globalHas(contract, key);
   }
@@ -135,7 +145,7 @@ class ZunaNFTBid {
   }
 
   _getNFTContract(){
-    const nftContractId = this._get(ZUNA_NFT_CONTRACT_ID, "null");
+    const nftContractId = this._get(NFT_CONTRACT_ID, "null");
     if (nftContractId == "null"){
       throw new Error("The NFT ContractID is not yet loaded.");
     }
@@ -143,7 +153,7 @@ class ZunaNFTBid {
   }
 
   _getNFTInfo(contract, id) {
-    const key = ZUNA_NFT_KEY + id;
+    const key = NFT_KEY + id;
     if (this._globalHas(contract, key) == false){
       throw "NFT token id does not exist!";
     }
@@ -406,6 +416,8 @@ class ZunaNFTBid {
 
     this._removeUserSaleBids(orderData.owner, orderData.orderId, saleOrder);
     this._removeOrder(orderId);
+
+    return;
   }
 
   sale(tokenId, price, symbol){
@@ -457,7 +469,8 @@ class ZunaNFTBid {
     }
     this._addUserSale(orderAccount, orderId);// add user data (order)
     this._setOrder(orderId, orderData);
- 
+
+    return;
   }
 
   unsale(orderId) {
@@ -505,6 +518,8 @@ class ZunaNFTBid {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), orderData.price, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);//add  this bidder
+
+    return;
   }
 
   claim(orderId) {
@@ -575,14 +590,26 @@ class ZunaNFTBid {
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
 
+    return;
   }
 
   loadNFTContract(contract){
     this._requireOwner();
-    if (this._globalHas(contract, ZUNA_NFT_CONTRACT_KEY) == false){
+    if (this._globalHas(contract, NFT_CONTRACT_KEY) == false){
       throw "NFT ContractID doest not exist!";
     }
-    this._put(ZUNA_NFT_CONTRACT_ID, contract, tx.publisher);
+    this._put(NFT_CONTRACT_ID, contract, tx.publisher);
+  }
+
+  rmOrder(orderId) {
+     this._requireAuth();
+     this._unsale(orderId);
+     return this._msg(200 , "success");
+  }
+
+  rmStorage(key){
+    this._requireOwner();
+    this._remove(key);
   }
 
 }
