@@ -126,13 +126,8 @@ class ZunaNFTBid {
   }
 
   _msg(code, msg, obj) {
-    var success;
-    if (code == 200) {
-      success = true;
-    } else {
-      success = false;
-    }
-    var message = {
+    const success = (code == 200) ? true: false;
+    const message = {
       code: code,
       message: msg,
       success: success,
@@ -421,6 +416,8 @@ class ZunaNFTBid {
 
     this._removeUserSaleBids(orderData.owner, orderData.orderId, saleOrder);
     this._removeOrder(orderId);
+
+    return;
   }
 
   sale(tokenId, price, symbol){
@@ -472,7 +469,8 @@ class ZunaNFTBid {
     }
     this._addUserSale(orderAccount, orderId);// add user data (order)
     this._setOrder(orderId, orderData);
- 
+
+    return;
   }
 
   unsale(orderId) {
@@ -520,6 +518,8 @@ class ZunaNFTBid {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), orderData.price, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);//add  this bidder
+
+    return;
   }
 
   claim(orderId) {
@@ -590,6 +590,7 @@ class ZunaNFTBid {
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
 
+    return;
   }
 
   loadNFTContract(contract){
