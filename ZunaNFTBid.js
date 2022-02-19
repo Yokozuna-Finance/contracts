@@ -1,6 +1,6 @@
-const ZUNA_NFT_CONTRACT_ID = "NFTCONTRACTID";
-const ZUNA_NFT_CONTRACT_KEY  = "zid";
-const ZUNA_NFT_KEY = "znft.";
+const NFT_CONTRACT_ID = "NFTCONTRACTID";
+const NFT_CONTRACT_KEY  = "zid";
+const NFT_KEY = "znft.";
 const ZUNAFEE = 'adminfee';
 const USER_MAX_ORDER_COUNT = 30;
 const ORDER_ID_KEY = "ORDERID";
@@ -16,7 +16,6 @@ const NFT_DATA_BASE = "NFTDATA.";
 const expiry = 20;
 const extendTime = 20;
 const lockTime = 259200;
-const tokenPrefix = "zuna_token_";
 
 const fixed = 2;
 const fixFee = 5;
@@ -135,7 +134,7 @@ class ZunaNFTBid {
   }
 
   _getNFTContract(){
-    const nftContractId = this._get(ZUNA_NFT_CONTRACT_ID, "null");
+    const nftContractId = this._get(NFT_CONTRACT_ID, "null");
     if (nftContractId == "null"){
       throw new Error("The NFT ContractID is not yet loaded.");
     }
@@ -143,7 +142,7 @@ class ZunaNFTBid {
   }
 
   _getNFTInfo(contract, id) {
-    const key = ZUNA_NFT_KEY + id;
+    const key = NFT_KEY + id;
     if (this._globalHas(contract, key) == false){
       throw "NFT token id does not exist!";
     }
@@ -579,10 +578,10 @@ class ZunaNFTBid {
 
   loadNFTContract(contract){
     this._requireOwner();
-    if (this._globalHas(contract, ZUNA_NFT_CONTRACT_KEY) == false){
+    if (this._globalHas(contract, NFT_CONTRACT_KEY) == false){
       throw "NFT ContractID doest not exist!";
     }
-    this._put(ZUNA_NFT_CONTRACT_ID, contract, tx.publisher);
+    this._put(NFT_CONTRACT_ID, contract, tx.publisher);
   }
 
 }
