@@ -1,6 +1,5 @@
 const NFT_CONTRACT_ID = "NFTCONTRACTID";
 const TOKEN_SYMBOL = 'zuna';
-const IOST_TOKEN = 'iost';
 const NFT_CONTRACT_KEY  = "zid";
 const NFT_KEY = "znft.";
 const ZUNAFEE = 'adminfee';
