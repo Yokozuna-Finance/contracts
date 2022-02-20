@@ -13,7 +13,6 @@
             "name": "sale",
             "args": [
                 "number",
-                "string",
                 "string"
             ],
             "amountLimit": [{

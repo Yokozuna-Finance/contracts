@@ -1,11 +1,12 @@
 const NFT_CONTRACT_ID = "NFTCONTRACTID";
+const TOKEN_SYMBOL = 'zuna';
+const IOST_TOKEN = 'iost';
 const NFT_CONTRACT_KEY  = "zid";
 const NFT_KEY = "znft.";
 const ZUNAFEE = 'adminfee';
 const USER_MAX_ORDER_COUNT = 30;
 const ORDER_ID_KEY = "ORDERID";
 const ORDER_COUNT_KEY = "ORDERCOUNT";
-const CONTRACT_ENABLE_KEY = "CONTRACTENABLE";
 const LOG_ID = "LOGID";
 const LOG_BASE = "LOG."
 const ORDER_BASE = "ORDER.";
@@ -238,7 +239,7 @@ class ZunaNFTBid {
   }
 
   _symbcheck(symbol){
-    if(symbol !== 'iost'){
+    if(symbol !== TOKEN_SYMBOL.toString()){
       throw new Error("symbol not support");
     }
   }
@@ -379,9 +380,9 @@ class ZunaNFTBid {
   }
 
   _unsale(orderId){
+    this._requireOwner();
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Unsale order " +  orderId + " does not exist");
-    this._requireOwner(orderData.owner);
     this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
     this._lt(tx.time, orderData.expire, "Order " + orderId + "is in trading");
 
@@ -420,15 +421,16 @@ class ZunaNFTBid {
     return;
   }
 
-  sale(tokenId, price, symbol){
+  sale(tokenId, price){
+    this._requireOwner();
+    const symbol = TOKEN_SYMBOL.toString();
     const orderAccount = tx.publisher;
-    this._requireOwner(orderAccount);
     const contract = this._getNFTContract();
     const contractInfo = this._getNFTInfo(contract, tokenId);
     var price = this._f(price).toFixed(fixed); //price to fixed to 2  rtn => string
     const deposit = this._multi(price, saleRate, fixed); //deposit to fixed to 2 rtn=>string
-    this._lteF(price, "0", "sale price must > 1 IOST");
-    this._lteF(deposit, "0", "sale price must > 1 IOST");
+    this._lteF(price, "0", "sale price must > 1 " +  symbol);
+    this._lteF(deposit, "0", "sale price must > 1 " + symbol);
     const orderId = this._getOrderId();
     const userData = this._getUserData(orderAccount);
 
