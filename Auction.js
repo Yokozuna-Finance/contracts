@@ -594,7 +594,7 @@ class Auction {
     return;
   }
 
-  loadNFTContract(contract){
+  setNFT(contract){
     this._requireOwner();
     if (this._globalHas(contract, NFT_CONTRACT_KEY) == false){
       throw "NFT ContractID doest not exist!";
