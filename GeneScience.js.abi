@@ -1,0 +1,51 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "hexToBn",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "encode",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "isLocked",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "version",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "mixGenes",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        }
+    ]
+}
