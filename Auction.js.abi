@@ -1,0 +1,71 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "sale",
+            "args": [
+                "number",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "unsale",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "bid",
+            "args": [
+                "number",
+                "number",
+                "number"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "claim",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "loadNFTContract",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "rmOrder",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "rmStorage",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        }
+    ]
+}
