@@ -60,8 +60,28 @@ class GeneScience {
     return status == 1 || now < until;
   }
 
-  version(){
-    return '0.0.1'
+  mixAbilities(ability1, ability2, mint) {
+    ability1 = ability1.split('-');
+    ability2 = ability2.split('-');
+    let limit = ability1.length > ability2.length ? ability1.length : ability2.length;
+
+    let res = [];
+    if ( mint === true ) {
+      for ( let i = 0;i < limit; i++ ) {
+        let avg = Math.floor(((ability1[i] + ability2[i]) / 2))
+        let diff = Math.ceil((avg * 1.1) - avg);
+        res.push(avg + (tx.time % diff))
+      }
+
+    } else {
+      let res = [];
+      for ( let i = 0;i < limit; i++ ) {
+        let gt = ability1[i] > ability2[i] ? ability1[i] : ability2[i]
+        res.push(gt + (tx.time % ability2[i]))
+      }
+    }
+
+    return res.join("-");
   }
 
   mixGenes(mgenes, sgenes) {
@@ -127,6 +147,10 @@ class GeneScience {
       }
     }
     return babygenes.reverse().join("");
+  }
+
+  version(){
+    return '0.0.1'
   }
 
 }
