@@ -22,7 +22,7 @@
         {
             "name": "unsale",
             "args": [
-                "string"
+                "number"
             ],
             "amountLimit": []
         },
