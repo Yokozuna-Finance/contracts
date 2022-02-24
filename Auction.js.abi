@@ -12,9 +12,7 @@
         {
             "name": "sale",
             "args": [
-                "number",
-                "string",
-                "string"
+                "number"
             ],
             "amountLimit": [{
                 "token": "*",
@@ -24,7 +22,7 @@
         {
             "name": "unsale",
             "args": [
-                "number"
+                "string"
             ],
             "amountLimit": []
         },
@@ -48,7 +46,7 @@
             "amountLimit": []
         },
         {
-            "name": "loadNFTContract",
+            "name": "setNFT",
             "args": [
                 "string"
             ],
@@ -57,7 +55,7 @@
         {
             "name": "rmOrder",
             "args": [
-                "number"
+                "string"
             ],
             "amountLimit": []
         },
