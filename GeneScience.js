@@ -1,4 +1,4 @@
-const BASE = BigInt(32);
+const BASE = new Int64(32);
 const ALPHA = '123456789abcdefghijkmnopqrstuvwx';
 const KAI_MAPPING = {
    '1':0,  '2':1,  '3':2,  '4':3,  '5':4,  '6':5,  '7':6,  '8':7,
@@ -10,6 +10,25 @@ const KAI_MAPPING = {
 class GeneScience {
 
   init() {
+
+  }
+
+  _getBlockTime(div=1000) {
+    div = +div;
+    return block.time / div;
+  }
+
+  _get(k, d, parse) {
+    const val = storage.get(k);
+    if (val === null || val === "") {
+      return d;
+    }
+
+    if(parse === false){
+      return val;
+    }else{
+      return JSON.parse(val);
+    } 
   }
 
   hexToBn(hex) {
@@ -18,12 +37,12 @@ class GeneScience {
     }
 
     let highbyte = parseInt(hex.slice(0, 2), 16)
-    let bn = BigInt('0x' + hex);
+    let bn = new Int64('0x' + hex);
 
     if (0x80 & highbyte) {
-      bn = BigInt('0b' + bn.toString(2).split('').map(function (i) {
+      bn = new Int64('0b' + bn.toString(2).split('').map(function (i) {
         return '0' === i ? 1 : 0
-      }).join('')) + BigInt(1);
+      }).join('')) + new Int64(1);
       bn = -bn;
     }
     return bn;
@@ -34,9 +53,21 @@ class GeneScience {
     while (num >= BASE){
       let mod = num % BASE;
       buf = ALPHA[mod] + buf
-      num = ((num - mod) / BASE) >> BigInt(0);
+      num = ((num - mod) / BASE) >> new Int64(0);
     }
     return ALPHA[num] + buf
+  }
+
+  decode(gene) {
+    let result = new Int64(0);
+    for (let i = 0; i < gene.length; i++) {
+      result = result * BASE + new Int64(KAI_MAPPING[gene[i]])
+    }
+    return result;
+  }
+
+  _getNow(){
+    return Math.floor(block.time / 1e9)
   }
 
   _format(code) {
@@ -60,50 +91,74 @@ class GeneScience {
     return status == 1 || now < until;
   }
 
-  mixAbilities(ability1, ability2, mint) {
+  mixAbilities(ability1, ability2, fuse) {
     ability1 = ability1.split('-');
     ability2 = ability2.split('-');
     let limit = ability1.length > ability2.length ? ability1.length : ability2.length;
+    let seed = this._getBlockTime();
 
-    let res = [];
-    if ( mint === true ) {
-      for ( let i = 0;i < limit; i++ ) {
-        let avg = Math.floor(((ability1[i] + ability2[i]) / 2))
-        let diff = Math.ceil((avg * 1.1) - avg);
-        res.push(avg + (tx.time % diff))
-      }
-
-    } else {
-      let res = [];
-      for ( let i = 0;i < limit; i++ ) {
-        let gt = ability1[i] > ability2[i] ? ability1[i] : ability2[i]
-        res.push(gt + (tx.time % ability2[i]))
-      }
+    function _random(mod=100) {
+      seed ^= seed << 13; 
+      seed ^= seed >> 17;
+      seed ^= seed << 5;
+      var res = (seed <0) ? ~seed+1 : seed;
+      return res % mod;
     }
 
-    return res.join("-");
+    var res = [];
+    if ( fuse === false ) {
+      for ( let i = 0;i < limit; i++ ) {
+        let ab1 = +ability1[i];
+        let ab2 = +ability2[i];
+
+        let avg = Math.floor(((ab1 + ab2) / 2));
+        let diff = Math.ceil((avg * 1.1) - avg);
+        res.push((avg + _random(diff)).toString())
+      }
+      return res.join("-");
+
+    } else {
+      for ( let i = 0;i < limit; i++ ) {
+        let ab1 = +ability1[i];
+        let ab2 = +ability2[i];
+
+        let gt = ab1 > ab2 ? ab1 : ab2;
+        let lt = ab1 < ab2 ? ab1 : ab2;
+        res.push((gt + _random(lt)).toString())
+      }
+      return res.join("-");
+    }
   }
 
-  mixGenes(mgenes, sgenes) {
-    mgenes = mgenes.split("").reverse();
-    sgenes = sgenes.split("").reverse();
-
+  mixGenes(mgenes, sgenes, fuse) {
     console.log('mgenes', mgenes);
     console.log('sgenes', sgenes);
 
-    babygenes = "?".repeat(48).split("");
+    mgenes = mgenes.split("").reverse();
+    sgenes = sgenes.split("").reverse();
+
+    let babygenes = "?".repeat(48).split("");
+    let seed = this._getBlockTime();
+
+    function _random(mod=100) {
+      seed ^= seed << 13; 
+      seed ^= seed >> 17;
+      seed ^= seed << 5;
+      var res = (seed <0) ? ~seed+1 : seed;
+      return res % mod;
+    }
 
     for (let i = 0; i < 12; i++) {
       let index = 4 * i
       for (let j = 3; j > 0; j--) {
-        if ((block.number % 100) < 25) {
+        if (_random() < 25) {
           let temp1 = mgenes[index+j];
           let temp2 = mgenes[index+j-1];
           mgenes[index+j-1] = temp1;
           mgenes[index+j] = temp2;
         }
             
-        if ((tx.time % 100) < 25) {
+        if (_random() < 25) {
           let temp1 = sgenes[index+j];
           let temp2 = sgenes[index+j-1];
           sgenes[index+j-1] = temp1;
@@ -128,18 +183,17 @@ class GeneScience {
           let probability = 25;
           if (gene1 > 23) {
             probability /= 2
-
-            if ((block.number % 100) < probability) {
-              mutation = ALPHA[(gene1/2)+16];
+            if ((_random()) < probability) {
+              mutation = ALPHA[(gene1/2)+_random(16)];
             }
-          }   
+          }
         }
       }
 
       if (mutation) {
         babygenes[i] = mutation;
       } else {
-        if (tx.time % 100 < 50) {
+        if (_random() < 50) {
           babygenes[i] = mgenes[i]
         } else {
           babygenes[i] = sgenes[i]
