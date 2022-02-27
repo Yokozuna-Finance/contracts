@@ -28,6 +28,7 @@
             "name": "generateNFT",
             "args": [
                 "string",
+                "string",
                 "string"
             ],
             "amountLimit": [],
@@ -88,7 +89,10 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }],
             "description": ""
         },
         {

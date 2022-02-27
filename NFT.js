@@ -5,8 +5,16 @@ const AUCTION_SLOT = 30;
 class NFT {
 
   init() {
-    this._generate('000063169218f348dc640d171b000208934b5a90189038cb3084624a50f7316c', '', tx.publisher);
-    this._generate('00005a13429085339c6521ef0300011c82438c628cc431a63298e3721f772d29', '', tx.publisher);
+    this._generate('111111111111111111111111111111111111111111111111', '', '30-30-30', tx.publisher);
+    this._generate('222222222222222222222222222222222222222222222222', '', '30-30-30', tx.publisher);
+    this._generate('333333333333333333333333333333333333333333333333', '', '30-30-30', tx.publisher);
+    this._generate('444444444444444444444444444444444444444444444444', '', '30-30-30', tx.publisher);
+    this._generate('123123123123123123123123123123123123123123123123', '', '30-30-30', tx.publisher);
+    this._generate('111122223333444411112222333344441111222233334444', '', '30-30-30', tx.publisher);
+    this._generate('123412341234123412341234123412341234123412341234', '', '30-30-30', tx.publisher);
+    this._generate('444433332222111144443333222211114444333322221111', '', '30-30-30', tx.publisher);
+    this._generate('333322221111333322221111333322221111333322221111', '', '30-30-30', tx.publisher);
+    this._generate('444433334444333344443333444433334444333344443333', '', '30-30-30', tx.publisher);
   }
 
   setGeneScience(contractID){
@@ -33,8 +41,7 @@ class NFT {
       return val;
     }else{
       return JSON.parse(val);
-    }
-    
+    } 
   }
 
   _put(k, v, stringify, p ) {
@@ -137,7 +144,7 @@ class NFT {
     this._addToTokenList(tokenId, userTo);
   }
 
-  _generate(gene, meta, owner) {
+  _generate(gene, meta, ability, owner) {
     if(gene === undefined) {
         throw 'Invalid gene';
     }
@@ -148,9 +155,11 @@ class NFT {
         owner: owner,
         id: currentID,
         gene: gene,
-        ability: this._generateNumberedAttributes(),
+        ability: ability,
         meta: meta
     }
+
+    console.log('tokenInfo:', tokenInfo);
 
     this._put('zun.' + currentID, owner);
     this._put('znft.' + currentID, tokenInfo, true);
@@ -176,9 +185,9 @@ class NFT {
     blockchain.receipt(message);
   }
 
-  generateNFT(gene, meta) { 
+  generateNFT(gene, meta, ability) { 
     this._requireOwner();
-    this._generate(gene, meta, tx.publisher);
+    this._generate(gene, meta, ability, blockchain.contractOwner());
   }
 
   transfer(tokenId, from, to, amount, memo) {
@@ -236,27 +245,41 @@ class NFT {
   }
 
   _generateRandomNFT(){
-    let nftID1 = this._get('zid', 1) - 1;
-    let nftID2 = this._get('zid', 1) - 2;
+
+    let seed = block.time / 1000;
+
+    function _random(mod=100) {
+      seed ^= seed << 13; 
+      seed ^= seed >> 17;
+      seed ^= seed << 5;
+      var res = (seed <0) ? ~seed+1 : seed;
+      return res % mod;
+    }
+
+    let tokenList = this._mapGet('userNFT', blockchain.contractOwner(), []);
+
+
+    let nftID1 = _random(tokenList.length);
+    let nftID2 = _random(tokenList.length);
 
     let nftInfo1 = this._get('znft.' + nftID1);
     let nftInfo2 = this._get('znft.' + nftID2);
-    this._mint(nftInfo1, nftInfo2, blockchain.contractOwner())
+    this._mint(nftInfo1, nftInfo2, blockchain.contractOwner(), false)
   }
 
-  _mint(nft1, nft2, owner) {
+  _mint(nft1, nft2, owner, fuse=false) {
     // generate nft by breeding
-    let mutated_gene = JSON.parse(blockchain.call(
+    let mutated_gene = blockchain.call(
       this._getGeneScience(), 
       "mixGenes", 
-      [nft1.gene, nft2.gene]
-    )[0]);
+      [nft1.gene, nft2.gene, fuse]
+    )[0];
 
-    let mutated_ability = JSON.parse(blockchain.call(
+    let mutated_ability = blockchain.call(
       this._getGeneScience(),
       "mixAbilities",
-      [nft1.ability, nft2.ability, 'true']
-    )[0]);
+      [nft1.ability, nft2.ability, fuse]
+    )[0];
 
     this._generate(
       mutated_gene, 
@@ -278,7 +301,6 @@ class NFT {
     while (tokenList.length <= AUCTION_SLOT) {
       this._generateRandomNFT();    
     }
-
   }
 
   fuse(nftID1, nftID2) {
@@ -302,11 +324,11 @@ class NFT {
       [YOKOZUNA_TOKEN_SYMBOL,
        tx.publisher,
        blockchain.contractName(),
-       FUSION_FEE,
+       FUSION_FEE.toString(),
        "Transaction fee."]
     );
 
-    this._mint(nftInfo1, nftInfo2, tx.publisher)
+    this._mint(nftInfo1, nftInfo2, tx.publisher, true)
 
     // burn the merged nfts
     this._burn(nftID1);
