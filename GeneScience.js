@@ -66,7 +66,7 @@ class GeneScience {
     return result;
   }
 
-  _getNow(){
+  _getNow() {
     return Math.floor(block.time / 1e9)
   }
 
@@ -94,6 +94,10 @@ class GeneScience {
   mixAbilities(ability1, ability2, fuse) {
     ability1 = ability1.split('-');
     ability2 = ability2.split('-');
+
+    if ( ability1.length !== ability2.length ) {
+      throw "Ability mismatch."
+    }
     let limit = ability1.length > ability2.length ? ability1.length : ability2.length;
     let seed = this._getBlockTime();
 
@@ -133,6 +137,10 @@ class GeneScience {
   mixGenes(mgenes, sgenes, fuse) {
     console.log('mgenes', mgenes);
     console.log('sgenes', sgenes);
+
+    if (mgenes.length != sgenes.length) {
+      throw "Gene length mismatch."
+    }
 
     mgenes = mgenes.split("").reverse();
     sgenes = sgenes.split("").reverse();
