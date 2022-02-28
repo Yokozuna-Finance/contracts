@@ -31,7 +31,7 @@
             "args": [
                 "number",
                 "number",
-                "number"
+                "string"
             ],
             "amountLimit": [{
                 "token": "*",
@@ -61,6 +61,34 @@
         },
         {
             "name": "rmStorage",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setDate",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setPrice",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setMaxOrder",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setPricePerMint",
             "args": [
                 "string"
             ],
