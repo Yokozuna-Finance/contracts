@@ -19,6 +19,14 @@
             "description": ""
         },
         {
+            "name": "decode",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"
@@ -37,7 +45,7 @@
             "args": [
                 "string",
                 "string",
-                "string"
+                "bool"
             ],
             "amountLimit": [],
             "description": ""
@@ -46,7 +54,8 @@
             "name": "mixGenes",
             "args": [
                 "string",
-                "string"
+                "string",
+                "bool"
             ],
             "amountLimit": [],
             "description": ""
