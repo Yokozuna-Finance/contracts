@@ -31,6 +31,21 @@ class NFT {
     return this._get('gene',"", true);
   }
 
+
+  setAuction(contractID){
+    this._requireOwner()
+
+    // set swap contractID to be used for liquidity pair staking
+    if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
+      throw "Invalid contract ID."
+    }
+    this._put('auction', contractID, tx.publisher)
+  }
+
+  _getAuction(){
+    return this._get('auction',"", true);
+  }
+
   _get(k, d, parse) {
     const val = storage.get(k);
     if (val === null || val === "") {
@@ -187,7 +202,7 @@ class NFT {
 
   generateNFT(gene, meta, ability) { 
     this._requireOwner();
-    this._generate(gene, meta, ability, blockchain.contractOwner());
+    return this._generate(gene, meta, ability, blockchain.contractOwner());
   }
 
   transfer(tokenId, from, to, amount, memo) {
@@ -240,7 +255,12 @@ class NFT {
 
     if (tokenList.length < AUCTION_SLOT) {
       // decide which 2 nfts to mix???
-      this._generateRandomNFT();
+      let tokenID = this._generateRandomNFT();
+      blockchain.call(
+        this._getAuction(), 
+        "sale", 
+        [tokenID]
+      )[0];
     }
   }
 
@@ -264,7 +284,9 @@ class NFT {
 
     let nftInfo1 = this._get('znft.' + nftID1);
     let nftInfo2 = this._get('znft.' + nftID2);
-    this._mint(nftInfo1, nftInfo2, blockchain.contractOwner(), false)
+    return this._mint(nftInfo1, nftInfo2, blockchain.contractOwner(), false);
+
+
   }
 
   _mint(nft1, nft2, owner, fuse=false) {
@@ -281,7 +303,7 @@ class NFT {
       [nft1.ability, nft2.ability, fuse]
     )[0];
 
-    this._generate(
+    return this._generate(
       mutated_gene, 
       '', 
       mutated_ability,
