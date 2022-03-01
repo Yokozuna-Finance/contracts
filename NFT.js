@@ -5,16 +5,6 @@ const AUCTION_SLOT = 30;
 class NFT {
 
   init() {
-    this._generate('111111111111111111111111111111111111111111111111', '', '30-30-30', tx.publisher);
-    this._generate('222222222222222222222222222222222222222222222222', '', '30-30-30', tx.publisher);
-    this._generate('333333333333333333333333333333333333333333333333', '', '30-30-30', tx.publisher);
-    this._generate('444444444444444444444444444444444444444444444444', '', '30-30-30', tx.publisher);
-    this._generate('123123123123123123123123123123123123123123123123', '', '30-30-30', tx.publisher);
-    this._generate('111122223333444411112222333344441111222233334444', '', '30-30-30', tx.publisher);
-    this._generate('123412341234123412341234123412341234123412341234', '', '30-30-30', tx.publisher);
-    this._generate('444433332222111144443333222211114444333322221111', '', '30-30-30', tx.publisher);
-    this._generate('333322221111333322221111333322221111333322221111', '', '30-30-30', tx.publisher);
-    this._generate('444433334444333344443333444433334444333344443333', '', '30-30-30', tx.publisher);
   }
 
   setGeneScience(contractID){
@@ -202,7 +192,26 @@ class NFT {
 
   generateNFT(gene, meta, ability) { 
     this._requireOwner();
-    return this._generate(gene, meta, ability, blockchain.contractOwner());
+    return this._generate(gene, meta, ability, this._getAuction());
+  }
+
+  generateInitialNFT() {
+    this._requireOwner();
+
+    let currentID = this._get('zid', 1);
+    if (currentID > 1) {
+        throw 'This ABI method can only be called once.'
+    }
+    this._generate('111111111111111111111111111111111111111111111111', '', '30-30-30', this._getAuction());
+    this._generate('222222222222222222222222222222222222222222222222', '', '30-30-30', this._getAuction());
+    this._generate('333333333333333333333333333333333333333333333333', '', '30-30-30', this._getAuction());
+    this._generate('444444444444444444444444444444444444444444444444', '', '30-30-30', this._getAuction());
+    this._generate('123123123123123123123123123123123123123123123123', '', '30-30-30', this._getAuction());
+    this._generate('111122223333444411112222333344441111222233334444', '', '30-30-30', this._getAuction());
+    this._generate('123412341234123412341234123412341234123412341234', '', '30-30-30', this._getAuction());
+    this._generate('444433332222111144443333222211114444333322221111', '', '30-30-30', this._getAuction());
+    this._generate('333322221111333322221111333322221111333322221111', '', '30-30-30', this._getAuction());
+    this._generate('444433334444333344443333444433334444333344443333', '', '30-30-30', this._getAuction());
   }
 
   transfer(tokenId, from, to, amount, memo) {
@@ -251,7 +260,7 @@ class NFT {
 
   mint() { 
     // generate new NFT
-    let tokenList = this._mapGet('userNFT', blockchain.contractOwner(), []);
+    let tokenList = this._mapGet('userNFT', this._getAuction(), []);
 
     if (tokenList.length < AUCTION_SLOT) {
       // decide which 2 nfts to mix???
@@ -276,15 +285,17 @@ class NFT {
       return res % mod;
     }
 
-    let tokenList = this._mapGet('userNFT', blockchain.contractOwner(), []);
+    let tokenList = this._mapGet('userNFT', this._getAuction(), []);
 
 
-    let nftID1 = _random(tokenList.length);
-    let nftID2 = _random(tokenList.length);
+    let random1 = _random(tokenList.length);
+    let random2 = _random(tokenList.length);
+    let nftID1 = tokenList[random1];
+    let nftID2 = tokenList[random2];
 
     let nftInfo1 = this._get('znft.' + nftID1);
     let nftInfo2 = this._get('znft.' + nftID2);
-    return this._mint(nftInfo1, nftInfo2, blockchain.contractOwner(), false);
+    return this._mint(nftInfo1, nftInfo2, this._getAuction(), false);
 
 
   }
@@ -318,7 +329,7 @@ class NFT {
 
   updateAuctionSlot() { 
     // check if we need to mint new nft;
-    let tokenList = this._mapGet('userNFT', blockchain.contractOwner(), []);
+    let tokenList = this._mapGet('userNFT', this._getAuction(), []);
 
     while (tokenList.length <= AUCTION_SLOT) {
       this._generateRandomNFT();    

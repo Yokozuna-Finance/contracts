@@ -43,6 +43,12 @@
             "description": ""
         },
         {
+            "name": "generateInitialNFT",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "transfer",
             "args": [
                 "string",
