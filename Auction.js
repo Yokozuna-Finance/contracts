@@ -2,23 +2,24 @@ const NFT_CONTRACT_ID = "NFTCONTRACTID";
 const TOKEN_SYMBOL = "zuna";
 const NFT_CONTRACT_KEY  = "zid";
 const NFT_KEY = "znft.";
-const ZUNAFEE = "adminfee";
-const USER_MAX_ORDER_COUNT = 30;
+const USER_MAX_ORDER_COUNT = 'USER_MAX_ORDER_COUNT';
 const ORDER_ID_KEY = "ORDERID";
 const ORDER_COUNT_KEY = "ORDERCOUNT";
 const LOG_ID = "LOGID";
 const LOG_BASE = "LOG."
 const ORDER_BASE = "ORDER.";
 const NFT_DATA_BASE = "NFTDATA.";
+const NFT_AUCTION_KEY = "NFT_ORDERS";
 const DATE_KEY = "DATE_STARTED";
 const PRICE_KEY = "CURRENT_PRICE";
+const MINT_PERCENTAGE_KEY = "MINT_PERCENTAGE";
 const INITIAL_PRICE_KEY = "INITIAL_PRICE"
 
 // const expiry = 86400; // 24hours
 // const extendTime = 3600; // 1hour
 const expiry = 20;
 const extendTime = 20;
-const lockTime = 259200;
+const lockTime = 3600;
 
 const fixed = 2;
 const fixFee = 5;
@@ -147,7 +148,7 @@ class Auction {
     return storage.globalGet(contract, key);
   }
 
-  _getNFTContract(){
+  _getNFT(){
     const nftContractId = this._get(NFT_CONTRACT_ID, "null");
     if (nftContractId == "null"){
       throw new Error("The NFT ContractID is not yet loaded.");
@@ -194,8 +195,19 @@ class Auction {
     return orderId;
   }
 
+  _setOrderList(account) {
+    let order = this._get(NFT_AUCTION_KEY, {'orders': [] } , 0);
+    const orderList = NFT_DATA_BASE + account;
+    if(!order.orders.includes(orderList)) {
+      order.orders.push(orderList);
+    };
+    this._put(NFT_AUCTION_KEY, order);
+  }
+
   _addUserSale(account, orderId) {
     const userData = this._getUserData(account);
+    this._checkOrderLimit(userData);
+
     if(userData){
       userData.orders.push(orderId);
       userData.orderCount ++;
@@ -206,10 +218,8 @@ class Auction {
 
   _addUserBid(account, orderId){
     const userData = this._getUserData(account);
+    this._checkOrderLimit(userData);
 
-    if(userData && userData.orderCount >= USER_MAX_ORDER_COUNT){
-      throw new Error("You can only hang "+ USER_MAX_ORDER_COUNT +" orders");
-    }
     userData.bids.push(orderId);
     userData.bidCount ++;
 
@@ -234,14 +244,14 @@ class Auction {
     }
 
     if(!found){
-      throw new Error(orderId);
+      throw "Order id: " + orderId + " is not found.";
     }
 
     this._setUserData(account, userData);
   }
 
   _symbcheck(symbol){
-    if(symbol !== TOKEN_SYMBOL.toString()){
+    if(symbol !== TOKEN_SYMBOL){
       throw new Error("symbol not support");
     }
   }
@@ -264,23 +274,46 @@ class Auction {
     this._subOrderCount(1);
   }
 
+  _removeOrderList(account) {
+    const userData = this._getUserData(account);
+    const order = this._get(NFT_AUCTION_KEY);
+    const orderList = NFT_DATA_BASE + account;
+    for(let i=0; i<order.orders.length; ++i){
+      if(order.orders[i] === orderList && userData.orderCount === 0){
+        order.orders.splice(i, 1);
+        break;
+      }
+    }
+    this._put(NFT_AUCTION_KEY, order);
+  }
+
   _getUserData(account){
     let userData = this._get(NFT_DATA_BASE + account);
     if(userData){
       return userData;
     }else{
       userData = {
-          totalBuy : 0,
-          totalSell : 0,
-          stackVolumn : 0,
-          orderCount :0,
-          orders:[],
-          bidCount:0,//Invalid data?
-          bids:[],
-          marginFund: {}
+          totalBuy: 0,
+          totalSell: 0,
+          orderCount: 0,
+          orders: [],
+          bidCount: 0,
+          bids: []
       }
       return userData;
     }
+  }
+
+  _setTotalSell(account) {
+    const orderData = this._getUserData(account);
+    orderData.totalSell ++;
+    this._setUserData(account, orderData);
+  }
+
+  _setTotalBuy(account) {
+    const orderData = this._getUserData(account);
+    orderData.totalBuy ++;
+    this._setUserData(account, orderData);
   }
 
   _setUserData(account, data){
@@ -291,8 +324,9 @@ class Auction {
     this._put(ORDER_BASE + orderId, orderData);
   }
 
-  _setDate() {
-    this._put(DATE_KEY, tx.time);
+  _setDate(timeStamp) {
+    const txTime = (timeStamp)? timeStamp: tx.time;
+    this._put(DATE_KEY, txTime);
   }
 
   _setInitialPrice() {
@@ -303,12 +337,24 @@ class Auction {
     this._put(PRICE_KEY, price);
   }
 
+  _setPricePerMint(percent) {
+    this._put(MINT_PERCENTAGE_KEY, percent);
+  }
+
+  _setMaxOrder(maxNumber) {
+    this._put(USER_MAX_ORDER_COUNT, maxNumber);
+  }
+
   _getInitialPrice() {
     this._get(INITIAL_PRICE_KEY);
   }
 
   _getPrice() {
     return this._get(PRICE_KEY);
+  }
+
+  _getPricePerMint() {
+    this._get(MINT_PERCENTAGE_KEY);
   }
 
   _getDate() {
@@ -330,11 +376,18 @@ class Auction {
   _checkPrice() {
     let initialPrice = this._getInitialPrice();
     if(!initialPrice) {
-      initialPrice = 1;
+      initialPrice = this._f("1.00").toFixed(fixed);
       this._setInitialPrice();
     }
+    let pricePerMint = this._getPricePerMint();
+    if (!pricePerMint) {
+	pricePerMint = this._f("0.01").toFixed(fixed);
+        this._setPricePerMint(pricePerMint);
+    }
+
     const price = initialPrice * (this._getDays()==0) ? 1: this._getDays();
-    this._setPrice(price);
+    const mintedPrice = this._multi(price, pricePerMint, fixed);
+    this._setPrice(this._plus(price, mintedPrice, fixed));
     return this._getPrice();
   }
 
@@ -382,10 +435,6 @@ class Auction {
     if (val1 != val2) throw err;
   }
 
-  _notIn(val, varArr, err) {
-    if (!varArr.includes(val)) throw err;
-  }
-
   _lt(val1, val2, err) {
     if (val1 < val2 ) throw err;
   }
@@ -420,9 +469,60 @@ class Auction {
     }
   }
 
+  _isExpired(orderId) {
+    const orderData = this._getOrder(orderId);
+    if (orderData.expire !== null && (tx.time >= orderData.expire)) {
+      return true;
+    }
+    return false;
+  }
+
+  _checkOrderLimit(userData) {
+    if(userData && userData.orderCount >= this._get(USER_MAX_ORDER_COUNT, 0, 0)){
+      throw "Maximum number of orders have been reached";
+    }
+  }
+
+  _mint() {
+    blockchain.call(
+      this._getNFT(),
+      "mint",
+      []
+    )[0];
+  }
+
+
+  _isOwnerBidder(orderId) {
+    const caller = tx.publisher;
+    this._requireAuth(caller);
+    const orderData = this._getOrder(orderId);
+    return (caller == orderData.owner || caller == orderData.bidder);
+  }
+
+  _unclaim(account) {
+    var userData = this._getUserData(account);
+    const orders = userData.orders;
+    orders.forEach(
+      (orderId)=> {
+        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
+          this.claim(orderId);
+	}
+      }
+    );
+  }
+
+  _setAuction() {
+    blockchain.call(
+      this._getNFT(),
+      "setAuction",
+      [blockchain.contractName().toString()]
+    )[0];
+  }
+
   _unsale(orderId){
     this._requireOwner();
     const orderData = this._getOrder(orderId);
+    this._unclaim(orderData.owner);
     this._notData(orderData, "Unsale order " +  orderId + " does not exist");
     this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
     this._lt(tx.time, orderData.expire, "Order " + orderId + "is in trading");
@@ -458,16 +558,17 @@ class Auction {
 
     this._removeUserSaleBids(orderData.owner, orderData.orderId, saleOrder);
     this._removeOrder(orderId);
+    this._removeOrderList(orderData.owner);
 
     return;
   }
 
-  sale(tokenId){
-    this._requireOwner();
+  _sale(tokenId){
+    const contract = this._getNFT();
     const price = this._f(this._checkPrice()).toFixed(fixed);
-    const symbol = TOKEN_SYMBOL.toString();
+    const symbol = TOKEN_SYMBOL;
     const orderAccount = tx.publisher;
-    const contract = this._getNFTContract();
+    this._unclaim(orderAccount);
     const contractInfo = this._getNFTInfo(contract, tokenId);
     const deposit = this._multi(price, saleRate, fixed); //deposit to fixed to 2 rtn=>string
     this._lteF(price, "0", "sale price must > 1 " +  symbol);
@@ -475,10 +576,9 @@ class Auction {
     const orderId = this._getOrderId();
     const userData = this._getUserData(orderAccount);
 
-    this._gte(userData.orderCount, USER_MAX_ORDER_COUNT,
-      "You can only hang "+ USER_MAX_ORDER_COUNT +" orders");
-
+    this._checkOrderLimit(userData);
     this._addOrderCount(1);
+
     this._safeTransfer(orderAccount, blockchain.contractName(), deposit, symbol,
       "stack sale" + orderId + " margin ")
 
@@ -508,48 +608,38 @@ class Auction {
       bidder : null,
       symbol : symbol,
       orderTime : tx.time,
-      expire : null,
-      expired: false
+      expire : null
     }
     this._addUserSale(orderAccount, orderId);// add user data (order)
     this._setOrder(orderId, orderData);
-
+    this._setOrderList(orderAccount);
     return;
   }
 
+  sale(tokenId) {
+    this._requireOwner();
+    return this._sale(tokenId);
+  }
+
   unsale(orderId) {
-    this._getNFTContract();
+    this._getNFT();
     return this._unsale(orderId);
   }
 
-  _isExpired(txTime, orderData) {
-    orderData.expired = true;
-    this._setOrder(orderData.orderId, orderData);
-    if (txTime >= orderData.expire) {
-      orderData.expired = true;
-      this._setOrder(orderData.orderId, orderData);
-      return true;
-    }
-    return false;
-  }
-
-  bid(orderId, tokenId, per) {
+  bid(orderId, tokenId, price) {
     const buyer = tx.publisher;
     this._requireAuth(buyer);
-    const contract = this._getNFTContract();
+    const contract = this._getNFT();
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
     this._notEqual(orderData.tokenId, tokenId, "token data check error");
     this._notEqual(orderData.contract, contract, "token data check error");
+    this._unclaim(orderData.owner);
     this._equal(orderData.bidder, buyer, "current bidder is you");
     this._equal(orderData.owner, buyer, "cannot bid yourself asset");
-    this._notIn(per, [1,2], "bidding percentage error");
-    if (orderData.expire !== null) {
-      const expired = this._isExpired(tx.time, orderData);
-      this._gte(tx.time, orderData.expire, "Order is expired");
-    }
-    const minprice = this._multi(orderData.price, this._getPcen(per), fixed);
-    this._lteF(minprice, orderData.price, "Price check error");
+    this._equal(true, this._isExpired(orderId), "Order is expired");
+    const minprice = this._f(price).toFixed(fixed);
+    this._lteF(minprice, orderData.price, "bid price should be higher");
     this._lteF(orderData.price, "0", "Price check error");
     this._lteF(minprice, "0", "Price check error");
 
@@ -574,7 +664,6 @@ class Auction {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), orderData.price, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);//add  this bidder
-
     return;
   }
 
@@ -590,34 +679,27 @@ class Auction {
         throw "Authorization failed.";
     }
 
-    const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const marketFee = this._multi(orderData.price, feeRate, fixFee);
     this._lteF(marketFee, "0", "marketFee amount error");
-    this._safeTransfer(blockchain.contractName(), ZUNAFEE, marketFee, orderData.symbol, memo);
-    let cpFee = 0;
-    // NOTE: nft creator is not implemented yet
-    // const nft = this._getNFTInfo(contract, orderData.tokenId);
-    // let cpFee = 0;
-    // cpFee = this._multi(orderData.price, cpRate, fixFee);
-    // this._lteF(cpFee, "0", "cpFee amount error");
-    //const memo1 = 'AUC-CPFEE-'+ orderData.contract + "-" +  orderData.tokenId;
-    //this._safeTransfer(blockchain.contractName(), nft.creator, cpFee, orderData.symbol, memo1);
-
-    const fee = this._plus(marketFee, cpFee, fixFee);
+    const fee = this._f(marketFee).toFixed(fixFee);
     this._gteF(fee, orderData.price, "Owner amount error");
     const ownerFee = this._minus(orderData.price, fee, fixFee);
     const nftMemo = 'AUC-TO-OWNER-' + orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(blockchain.contractName(), orderData.owner, ownerFee,
       orderData.symbol, nftMemo);
 
+    const transferMemo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const nftArgs = [
         orderData.tokenId.toString(),
         blockchain.contractName(),
         orderData.bidder,
         "1",
-        memo
+        transferMemo
     ];
     blockchain.callWithAuth(orderData.contract, 'transfer', JSON.stringify(nftArgs));
+
+    this._setTotalSell(orderData.owner);
+    this._setTotalBuy(orderData.bidder);
 
     const unfreezeTime = tx.time + lockTime*1e9;
     const freezeMemo = ('AUC-DELAYED-WITHDRAW-' + orderData.symbol + "-to-" + orderData.owner +"-"
@@ -646,16 +728,21 @@ class Auction {
     this._removeUserSaleBids(orderData.owner, orderId, saleOrder);
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
+    this._mint();
 
     return;
   }
 
-  setNFT(contract){
+  setNFT(contractID){
     this._requireOwner();
-    if (this._globalHas(contract, NFT_CONTRACT_KEY) == false){
+    if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
+      throw "Invalid contract ID."
+    }
+    if (this._globalHas(contractID, NFT_CONTRACT_KEY) == false){
       throw "NFT ContractID doest not exist!";
     }
-    this._put(NFT_CONTRACT_ID, contract, tx.publisher);
+    this._put(NFT_CONTRACT_ID, contractID, tx.publisher);
+    this._setAuction();
   }
 
   rmOrder(orderId) {
@@ -667,6 +754,25 @@ class Auction {
   rmStorage(key){
     this._requireOwner();
     this._remove(key);
+  }
+
+  setDate(timestamp) {
+    this._setDate(Math.floor(timestamp));
+  }
+
+  setPrice(price) {
+    this._setPrice(price);
+    return this._msg(200 , "success");
+  }
+
+  setMaxOrder(maxNumber) {
+    this._setMaxOrder(maxNumber);
+    return this._msg(200 , "success");
+  }
+
+  setPricePerMint(percent) {
+    this._setPricePerMint(percent);
+    return this._msg(200 , "success");
   }
 
 }
