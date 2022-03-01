@@ -64,3 +64,9 @@
     ```
     iwallet --account admin -v call <Auction Contract>  setPrice '["1.00"]' -s 18.209.137.246:30002
     ```
+
+* In case you need to set the expiry. Parameters: setExpiry[20] in seconds
+
+    ```
+    iwallet --account admin -v call <Auction Contract>  setExpiry '[20]' -s 18.209.137.246:30002
+    ```
