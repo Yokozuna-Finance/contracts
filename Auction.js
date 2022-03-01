@@ -253,7 +253,7 @@ class Auction {
 
   _symbcheck(symbol){
     if(symbol !== TOKEN_SYMBOL){
-      throw new Error("symbol not support");
+      throw new Error("symbol not supported");
     }
   }
 
