@@ -2,7 +2,7 @@ const NFT_CONTRACT_ID = "NFTCONTRACTID";
 const TOKEN_SYMBOL = "zuna";
 const NFT_CONTRACT_KEY  = "zid";
 const NFT_KEY = "znft.";
-const USER_MAX_ORDER_KEY = 'USER_MAX_ORDER_COUNT';
+const USER_MAX_ORDER_COUNT = 'USER_MAX_ORDER_COUNT';
 const ORDER_ID_KEY = "ORDERID";
 const ORDER_COUNT_KEY = "ORDERCOUNT";
 const LOG_ID = "LOGID";
@@ -105,10 +105,6 @@ class Auction {
       this._mapPut(kn, field, amount);
   }
 
-  _arrPush(arr, val) {
-    if(!arr.includes(val)) { arr.push(val)};
-  }
-
   _rmPutAmount(key, symbol, amount){
       const kn = key + symbol;
       var v = this._get(kn);
@@ -200,12 +196,12 @@ class Auction {
   }
 
   _setOrderList(account) {
-    let orders = this._get(NFT_AUCTION_KEY, [] , 0);
-    if (orders.length < 1 ) {
-      orders = new Array();
-    }
-    orders = this._arrPush(orders, account);
-    this._put(NFT_AUCTION_KEY, orders);
+    let order = this._get(NFT_AUCTION_KEY, {'orders': [] } , 0);
+    const orderList = NFT_DATA_BASE + account;
+    if(!order.orders.includes(orderList)) {
+      order.orders.push(orderList);
+    };
+    this._put(NFT_AUCTION_KEY, order);
   }
 
   _addUserSale(account, orderId) {
@@ -279,19 +275,16 @@ class Auction {
   }
 
   _removeOrderList(account) {
-    let found = false;
-    const orders = this._get(NFT_AUCTION_KEY, [] , 0);
-    for(let i=0; i<orders.length; ++i){
-      if(orders[i] === account){
-        orders.splice(i, 1);
-        found = true;
+    const userData = this._getUserData(account);
+    const order = this._get(NFT_AUCTION_KEY);
+    const orderList = NFT_DATA_BASE + account;
+    for(let i=0; i<order.orders.length; ++i){
+      if(order.orders[i] === orderList && userData.orderCount === 0){
+        order.orders.splice(i, 1);
         break;
       }
     }
-    if(!found) {
-      throw "Orders for " + account + " does not exist.";
-    }
-    
+    this._put(NFT_AUCTION_KEY, order);
   }
 
   _getUserData(account){
@@ -345,11 +338,11 @@ class Auction {
   }
 
   _setPricePerMint(percent) {
-    this.put(MINT_PERCENTAGE_KEY, this._f(percent).toFixed(fixed));
+    this._put(MINT_PERCENTAGE_KEY, percent);
   }
 
   _setMaxOrder(maxNumber) {
-    this._put('USER_MAX_ORDER_COUNT', maxNumber);
+    this._put(USER_MAX_ORDER_COUNT, maxNumber);
   }
 
   _getInitialPrice() {
@@ -361,7 +354,7 @@ class Auction {
   }
 
   _getPricePerMint() {
-    this._get(MINT_PERCENTAGE_KEY, 0, 0);
+    this._get(MINT_PERCENTAGE_KEY);
   }
 
   _getDate() {
@@ -383,17 +376,18 @@ class Auction {
   _checkPrice() {
     let initialPrice = this._getInitialPrice();
     if(!initialPrice) {
-      initialPrice = 1;
+      initialPrice = this._f("1.00").toFixed(fixed);
       this._setInitialPrice();
     }
     let pricePerMint = this._getPricePerMint();
-    if (pricePerMint <= 0) {
+    if (!pricePerMint) {
 	pricePerMint = this._f("0.01").toFixed(fixed);
         this._setPricePerMint(pricePerMint);
     }
 
     const price = initialPrice * (this._getDays()==0) ? 1: this._getDays();
-    this._setPrice(this._multi(price, pricePerMint, fixed));
+    const mintedPrice = this._multi(price, pricePerMint, fixed);
+    this._setPrice(this._plus(price, mintedPrice, fixed));
     return this._getPrice();
   }
 
@@ -484,26 +478,34 @@ class Auction {
   }
 
   _checkOrderLimit(userData) {
-    if(userData && userData.orderCount >= USER_MAX_ORDER_COUNT){
+    if(userData && userData.orderCount >= this._get(USER_MAX_ORDER_COUNT, 0, 0)){
       throw "Maximum number of orders have been reached";
     }
   }
 
   _mint() {
     blockchain.call(
-      this.getNFT().toString(),
+      this._getNFT(),
       "mint",
       []
     )[0];
   }
 
+
+  _isOwnerBidder(orderId) {
+    const caller = tx.publisher;
+    this._requireAuth(caller);
+    const orderData = this._getOrder(orderId);
+    return (caller == orderData.owner || caller == orderData.bidder);
+  }
+
   _unclaim(account) {
     var userData = this._getUserData(account);
-    const orders = UserData.orders;
-    forEach(
+    const orders = userData.orders;
+    orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true) {
-          this.claim(val);
+        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
+          this.claim(orderId);
 	}
       }
     );
@@ -520,6 +522,7 @@ class Auction {
   _unsale(orderId){
     this._requireOwner();
     const orderData = this._getOrder(orderId);
+    this._unclaim(orderData.owner);
     this._notData(orderData, "Unsale order " +  orderId + " does not exist");
     this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
     this._lt(tx.time, orderData.expire, "Order " + orderId + "is in trading");
@@ -562,10 +565,10 @@ class Auction {
 
   _sale(tokenId){
     const contract = this._getNFT();
-    this._unclaim();
     const price = this._f(this._checkPrice()).toFixed(fixed);
     const symbol = TOKEN_SYMBOL;
     const orderAccount = tx.publisher;
+    this._unclaim(orderAccount);
     const contractInfo = this._getNFTInfo(contract, tokenId);
     const deposit = this._multi(price, saleRate, fixed); //deposit to fixed to 2 rtn=>string
     this._lteF(price, "0", "sale price must > 1 " +  symbol);
@@ -628,10 +631,10 @@ class Auction {
     this._requireAuth(buyer);
     const contract = this._getNFT();
     const orderData = this._getOrder(orderId);
-    this._unclaim(orderData.owner);
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
     this._notEqual(orderData.tokenId, tokenId, "token data check error");
     this._notEqual(orderData.contract, contract, "token data check error");
+    this._unclaim(orderData.owner);
     this._equal(orderData.bidder, buyer, "current bidder is you");
     this._equal(orderData.owner, buyer, "cannot bid yourself asset");
     this._equal(true, this._isExpired(orderId), "Order is expired");
