@@ -639,7 +639,6 @@ class Auction {
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
     this._notEqual(orderData.tokenId, tokenId, "token data check error");
     this._notEqual(orderData.contract, contract, "token data check error");
-    this._unclaim(orderData.owner);
     this._equal(orderData.bidder, buyer, "current bidder is you");
     this._equal(orderData.owner, buyer, "cannot bid yourself asset");
     this._equal(true, this._isExpired(orderId), "Order is expired");
@@ -669,6 +668,7 @@ class Auction {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), orderData.price, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);//add  this bidder
+    this._unclaim(orderData.owner);
     return;
   }
 
