@@ -1,4 +1,4 @@
-> Note: Make sure that NFT Contract is set into Auction Contract
+> Note: Make sure that you have enough zuna token balance for each user.
 
 * Upload NFT Contract
 
