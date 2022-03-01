@@ -29,10 +29,10 @@
     iwallet --account admin -v call <Auction Contract>  sale '[1]' -s 18.209.137.246:30002
     ```
 
-* Bid specific order. Parameters: bid[orderId, NFTtokenId, price]
+* Bid specific order. Parameters: bid[orderId, price]
 
     ```
-    iwallet --account <user> -v call <Auction Contract>  bid '[1,1,"2"]' --chain_id 1020 --gas_limit 4000000 -s 18.209.137.246:30002
+    iwallet --account <user> -v call <Auction Contract>  bid '[1,"2"]' --chain_id 1020 --gas_limit 4000000 -s 18.209.137.246:30002
     ```
 
 * Claim orderId in Auction. Parameters: claim[orderId]
