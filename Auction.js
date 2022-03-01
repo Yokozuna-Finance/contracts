@@ -126,17 +126,6 @@ class Auction {
     throw new Error("Get mput key: " + kn + " is empty" );
   }
 
-  _msg(code, msg, obj) {
-    const success = (code == 200) ? true: false;
-    const message = {
-      code: code,
-      message: msg,
-      success: success,
-      object: obj
-    }
-    return message;
-  }
-
   _globalHas(contract, key){
     return storage.globalHas(contract, key);
   }
@@ -747,7 +736,7 @@ class Auction {
   rmOrder(orderId) {
      this._requireAuth(tx.publisher);
      this._unsale(orderId);
-     return this._msg(200 , "success");
+     return;
   }
 
   rmStorage(key){
