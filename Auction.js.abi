@@ -30,7 +30,6 @@
             "name": "bid",
             "args": [
                 "number",
-                "number",
                 "string"
             ],
             "amountLimit": [{
