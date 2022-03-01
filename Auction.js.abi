@@ -7,8 +7,7 @@
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         },
         {
             "name": "sale",
