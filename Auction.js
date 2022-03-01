@@ -6,19 +6,17 @@ const USER_MAX_ORDER_COUNT = 'USER_MAX_ORDER_COUNT';
 const ORDER_ID_KEY = "ORDERID";
 const ORDER_COUNT_KEY = "ORDERCOUNT";
 const LOG_ID = "LOGID";
-const LOG_BASE = "LOG."
+const LOG_BASE = "LOG.";
 const ORDER_BASE = "ORDER.";
 const NFT_DATA_BASE = "NFTDATA.";
 const NFT_AUCTION_KEY = "NFT_ORDERS";
 const DATE_KEY = "DATE_STARTED";
 const PRICE_KEY = "CURRENT_PRICE";
 const MINT_PERCENTAGE_KEY = "MINT_PERCENTAGE";
-const INITIAL_PRICE_KEY = "INITIAL_PRICE"
+const INITIAL_PRICE_KEY = "INITIAL_PRICE";
+const AUCTION_EXPIRY_KEY = "EXPIRY";
 
-// const expiry = 86400; // 24hours
-// const extendTime = 3600; // 1hour
-const expiry = 20;
-const extendTime = 20;
+const extendTime = 3600;
 const lockTime = 3600;
 
 const fixed = 2;
@@ -37,7 +35,10 @@ const bidOrder = 'bid';
 
 class Auction {
 
-  init() { this._setDate(); }
+  init() { 
+    this._setDate();
+    this._setExpiry(); 
+  }
 
   _requireAuth(account) {
     if (!blockchain.requireAuth(account, "active")) {
@@ -52,7 +53,7 @@ class Auction {
   }
 
   can_update(data) {
-    this._requireOwner()
+    this._requireOwner();
   }
 
   _put(k, v, stringify, p ) {
@@ -112,7 +113,7 @@ class Auction {
         this._ltF(v, amount, "Amount not allowed");
         amount = this._minus(v, amount, fixed);
         this._put(kn, amount);
-        return
+        return;
       }
       throw new Error("Get put key: " + kn + " is empty" );
   }
@@ -124,7 +125,7 @@ class Auction {
       this._ltF(v, amount, "Amount is not allowed");
       amount = this._minus(v, amount, fixed)
       this._mapPut(kn, field, amount);
-      return
+      return;
     }
     throw new Error("Get mput key: " + kn + " is empty" );
   }
@@ -361,8 +362,13 @@ class Auction {
     return this._get(DATE_KEY);
   }
 
-  _getExpiry(){
-    return tx.time + (expiry * 1e9);
+  _setExpiry(expiry=86400){
+    this._put(AUCTION_EXPIRY_KEY, expiry);
+  }
+
+  _getExpiry() {
+    const expiry = this._get(AUCTION_EXPIRY_KEY);
+    return tx.time +(Math.floor(expiry) * 1e9);
   }
 
   _extendExpiry(expiry){
@@ -490,7 +496,6 @@ class Auction {
       []
     )[0];
   }
-
 
   _isOwnerBidder(orderId) {
     const caller = tx.publisher;
@@ -762,17 +767,22 @@ class Auction {
 
   setPrice(price) {
     this._setPrice(price);
-    return this._msg(200 , "success");
+    return this._msg(200, "success");
   }
 
   setMaxOrder(maxNumber) {
     this._setMaxOrder(maxNumber);
-    return this._msg(200 , "success");
+    return this._msg(200, "success");
   }
 
   setPricePerMint(percent) {
     this._setPricePerMint(percent);
-    return this._msg(200 , "success");
+    return this._msg(200, "success");
+  }
+
+  setExpiry(expiry) {
+    this._setExpiry(expiry);
+    return this._msg(200, "success");
   }
 
 }
