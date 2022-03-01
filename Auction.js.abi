@@ -93,6 +93,13 @@
                 "string"
             ],
             "amountLimit": []
+        },
+        {
+            "name": "setExpiry",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
         }
     ]
 }
