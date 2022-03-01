@@ -725,6 +725,14 @@ class Auction {
     )[0];
   }
 
+  _generateInitialNFT() {
+    blockchain.call(
+      this._getNFT(),
+      "generateInitialNFT",
+      []
+    )[0];
+  }
+
   setNFT(contractID) {
     this._requireOwner();
     if (this._globalHas(contractID, NFT_CONTRACT_KEY) == false) {
@@ -732,6 +740,7 @@ class Auction {
     }
     this._setNFT(contractID);
     this._setAuction();
+    this._generateInitialNFT();
   }
 
   rmOrder(orderId) {
