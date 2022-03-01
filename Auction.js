@@ -707,7 +707,8 @@ class Auction {
     this._removeUserSaleBids(orderData.owner, orderId, saleOrder);
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
-    //this._mint();
+    this._removeOrderList(orderData.owner);
+    this._mint();
 
     return;
   }
