@@ -631,14 +631,13 @@ class Auction {
     return this._unsale(orderId);
   }
 
-  bid(orderId, tokenId, price) {
+  bid(orderId, price) {
     const buyer = tx.publisher;
     this._requireAuth(buyer);
     const contract = this._getNFT();
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
-    this._notEqual(orderData.tokenId, tokenId, "token data check error");
-    this._notEqual(orderData.contract, contract, "token data check error");
+    this._notEqual(orderData.contract, contract, "contract mismatch");
     this._equal(orderData.bidder, buyer, "current bidder is you");
     this._equal(orderData.owner, buyer, "cannot bid yourself asset");
     this._equal(true, this._isExpired(orderId), "Order is expired");
