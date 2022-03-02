@@ -113,6 +113,12 @@
             "description": ""
         },
         {
+            "name": "approveAll",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "version",
             "args": [],
             "amountLimit": [],
