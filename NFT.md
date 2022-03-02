@@ -68,3 +68,15 @@
     ```
     iwallet --account hooda1985 -v call <NFT Contract ID> updateAuctionSlot '[]' -s 18.209.137.246:30002
     ```
+
+* Set the Bid winner as an approver for the NFT so he can claim it.
+    ```
+    iwallet --account hooda1985 -v call <NFT Contract ID> approve '[<Bid winner>, <NFT ID>]' -s 18.209.137.246:30002
+    ```
+
+
+* Set the all the Bid winners as an approver of the NFT token they won.
+    ```
+    iwallet --account hooda1985 -v call <NFT Contract ID> approveAll '[]' -s 18.209.137.246:30002
+    ```
+

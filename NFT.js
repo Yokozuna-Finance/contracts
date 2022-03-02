@@ -1,6 +1,6 @@
 const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
 const FUSION_FEE = 2;
-const AUCTION_SLOT = 30;
+const AUCTION_SLOT = 18;
 
 class NFT {
 
@@ -9,8 +9,6 @@ class NFT {
 
   setGeneScience(contractID){
     this._requireOwner()
-
-    // set swap contractID to be used for liquidity pair staking
     if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
@@ -24,8 +22,6 @@ class NFT {
 
   setAuction(contractID){
     this._requireOwner()
-
-    // set swap contractID to be used for liquidity pair staking
     if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
@@ -80,6 +76,14 @@ class NFT {
     }
   }
 
+  _globalGet(c, k, d) {
+    const val = storage.globalGet(c, k);
+    if (val === null || val === "") {
+      return d;
+    }
+    return JSON.parse(val);
+  }
+
   _delete(k) {
     storage.del(k);
   }
@@ -108,7 +112,7 @@ class NFT {
   _generateID() {
     let currentID = this._get('zid', 1);
     this._put('zid', currentID + 1);
-    return currentID;
+    return "Yokozuna." + currentID.toString();
   }
 
   _isNotNull(val, err) {
@@ -161,7 +165,7 @@ class NFT {
         id: currentID,
         gene: gene,
         ability: ability,
-        meta: meta
+        creator: blockchain.contractName()
     }
 
     console.log('tokenInfo:', tokenInfo);
@@ -185,7 +189,6 @@ class NFT {
     this._put('zun.' + tokenId, to);
     this._delete('app.' + tokenId);
     this._updateTokenList(tokenId, from, to);
-
     const message = "transfer " + tokenId + " to " + to + " from " + from;
     blockchain.receipt(message);
   }
@@ -230,7 +233,7 @@ class NFT {
       return;
     }
 
-    const approver = this._get('app.' + tokenId);
+    const approver = this._get('app.' + tokenId, null);
     this._isNotNull(approver, "Not allowed.");
     if (blockchain.requireAuth(approver, "active")) {
       this._transferToken(from, to, tokenId);
@@ -242,7 +245,9 @@ class NFT {
   _approveToken(to, tokenId) {
     let owner = this._get('zun.' + tokenId);
     this._isNotNull(owner, "Invalid token");
-    this._requireAuth(owner);
+    if (tx.publisher != blockchain.contractOwner()) {
+      this._requireAuth(owner);
+    }
     this._put('app.' + tokenId, to);
   }
 
@@ -366,6 +371,23 @@ class NFT {
     // burn the merged nfts
     this._burn(nftID1);
     this._burn(nftID2);
+  }
+
+  approveAll() {
+    this._requireOwner();
+
+    const orderIDs = this._globalGet(this._getAuction(), 'ORDER_DATA.' + tx.publisher).orders;
+
+    for (let i = 0; i < orderIDs.length; i++) {
+        // get order details and check if it is already expire
+        let orderData = this._globalGet(this._getAuction(), 'ORDER.' + orderIDs[i].toString());
+        if (orderData.expire < block.time) {
+            const approver = this._get('app.' + orderData.tokenId, null);
+            if (approver != orderData.bidder) {
+              this.approve(orderData.bidder, orderData.tokenId)    
+            }    
+        }
+    } 
   }
 
   version(){
