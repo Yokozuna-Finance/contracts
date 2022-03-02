@@ -179,6 +179,14 @@ class NFT {
     return currentID;
   }
 
+  _updateOwner(user, tokenId) { 
+    let tokenInfo = this._get('znft.' + tokenId);
+    if (tokenInfo.owner != user) {
+      tokenInfo.owner = user;
+      this._put('znft.' + tokenId, tokenInfo, true);
+    }
+  }
+
   _transferToken(from, to, tokenId) {
     tokenId = +tokenId;
     let balance_from = this._get('bal.' + from);
@@ -189,6 +197,8 @@ class NFT {
     this._put('zun.' + tokenId, to);
     this._delete('app.' + tokenId);
     this._updateTokenList(tokenId, from, to);
+    this._updateOwner(to, tokenId);
+
     const message = "transfer " + tokenId + " to " + to + " from " + from;
     blockchain.receipt(message);
   }
