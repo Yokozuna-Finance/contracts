@@ -1,8 +1,7 @@
 const NFT_CONTRACT_ID = 'NFT_CONTRACT';
 const DAO_CONTRACT_ID = 'DAO_CONTRACT';
 const TOKEN_SYMBOL = 'zuna';
-const NFT_CONTRACT_KEY  = 'zid';
-const NFT_KEY = 'znft.';
+const NFT_KEY = 'Yokozuna.';
 const MAX_ORDER_COUNT = 'MAX_ORDER_COUNT';
 const ORDER_ID_KEY = 'ORDERID';
 const ORDER_COUNT_KEY = "ORDERCOUNT";
@@ -147,7 +146,7 @@ class Auction {
   }
 
   _getNFTInfo(contract, id) {
-    const key = NFT_KEY + id;
+    const key = 'znft.' + NFT_KEY + id;
     this._equal(this._globalHas(contract, key), false, "NFT token id does not exist!");
     return this._getGlobal(contract, key, 0, true);
   }
@@ -484,9 +483,8 @@ class Auction {
 
   _isOwnerBidder(orderId) {
     const caller = tx.publisher;
-    this._requireAuth(caller);
     const orderData = this._getOrder(orderId);
-    return (caller == orderData.owner || caller == orderData.bidder);
+    return (caller == orderData.creator || caller == orderData.bidder);
   }
 
   _unclaim(account) {
@@ -519,7 +517,7 @@ class Auction {
       const auctions = this._get(account);
       auctions.orders.forEach((id) => {
        var orderData = this._getOrder(id);
-        this._equal(orderData.tokenId, orderId, "Token already in Auction.");
+        this._equal(orderData.tokenId, NFT_KEY + orderId, "Token already in Auction.");
       });
       return;
     }
@@ -532,9 +530,9 @@ class Auction {
   }
 
   _isInAuction(contract, tokenId) {
-    const token = this._getGlobal(contract, NFT_KEY+tokenId, 0, true);
-    this._equal(token, 0, "token not found");
-    if (token.owner == blockchain.contractName()) {
+    const tokenOwner = this._getGlobal(contract, 'zun.'+ NFT_KEY + tokenId, 0, true);
+    this._equal(tokenOwner, 0, "token not found");
+    if (tokenOwner == blockchain.contractName()) {
       this._orderExist(tokenId);
       return;
     }
@@ -547,6 +545,7 @@ class Auction {
     this._isInAuction(contract, tokenId);
     const price = this._f(this._checkPrice()).toFixed(fixed);
     const symbol = TOKEN_SYMBOL;
+    const creator = tx.publisher;
     const orderAccount = blockchain.contractName();
     this._unclaim(orderAccount);
     const contractInfo = this._getNFTInfo(contract, tokenId);
@@ -559,6 +558,7 @@ class Auction {
     const orderData = {
       orderId: orderId,
       actionCode: "SALE",
+      creator: creator,
       owner: orderAccount,
       tokenId: contractInfo.id,
       aucPrice: price,
@@ -636,7 +636,7 @@ class Auction {
 
   _DaoFee(orderData) {
     const contract = this._getDao();
-    if (contract) {
+    if (contract !== null) {
       const memo = 'AUC-FEE-TO-DAO-' + orderData.contract + "-" +  orderData.tokenId;
       this._safeTransfer(orderData.owner, contract,
         this._div(orderData.fee, 2, fixFee), orderData.symbol, memo);
@@ -650,10 +650,9 @@ class Auction {
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(caller !== orderData.owner && caller !== orderData.bidder) {
+    if(caller !== orderData.creator && caller !== orderData.bidder) {
         throw "Authorization failed.";
     }
-
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [
         orderData.tokenId.toString(),
@@ -676,8 +675,8 @@ class Auction {
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
-    this._mint();
-
+    this._DaoFee(orderData);
+    //this._mint();
     return;
   }
 
@@ -692,23 +691,9 @@ class Auction {
     this._put(NFT_CONTRACT_ID, contractID, tx.publisher);
   }
 
-  _setAuction() {
-    blockchain.call(this._getNFT(), "setAuction", [blockchain.contractName().toString()])[0];
-  }
-
-  _generateInitialNFT() {
-    const contract = this._getNFT();
-    const currentID = this._getGlobal(contract, 'zid', 0);
-    if (currentID == 0) {
-      blockchain.call(contract, "generateInitialNFT", [])[0];
-    }
-  }
-
   setNFT(contractID) {
     this._requireOwner();
     this._setNFT(contractID);
-    this._setAuction();
-    this._generateInitialNFT();
   }
 
   setDao(contractID) 
