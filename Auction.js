@@ -738,12 +738,6 @@ class Auction {
     this._put(AUCTION_FEE_RATE, rate);
   }
 
-  rmStorage(key){
-    this._requireOwner();
-    this._remove(key);
-    return;
-  }
-
   can_update(data) {
     return this._requireOwner();
   }
