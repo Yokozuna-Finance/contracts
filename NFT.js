@@ -165,7 +165,7 @@ class NFT {
         id: currentID,
         gene: gene,
         ability: ability,
-        meta: meta
+        creator: blockchain.contractName()
     }
 
     console.log('tokenInfo:', tokenInfo);
