@@ -479,11 +479,7 @@ class Auction {
   }
 
   _mint() {
-    blockchain.call(
-      this._getNFT(),
-      "mint",
-      []
-    )[0];
+    blockchain.call(this._getNFT(),"mint",[])[0];
   }
 
   _isOwnerBidder(orderId) {
@@ -680,7 +676,7 @@ class Auction {
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
-    //this._mint();
+    this._mint();
 
     return;
   }
@@ -697,7 +693,7 @@ class Auction {
   }
 
   _setAuction() {
-    blockchain.call(this._getNFT(),"setAuction",[blockchain.contractName().toString()])[0];
+    blockchain.call(this._getNFT(), "setAuction", [blockchain.contractName().toString()])[0];
   }
 
   _generateInitialNFT() {
