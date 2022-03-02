@@ -242,7 +242,9 @@ class NFT {
   _approveToken(to, tokenId) {
     let owner = this._get('zun.' + tokenId);
     this._isNotNull(owner, "Invalid token");
-    this._requireAuth(owner);
+    if (tx.publisher != blockchain.contractOwner()) {
+      this._requireAuth(owner);
+    }
     this._put('app.' + tokenId, to);
   }
 
