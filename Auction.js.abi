@@ -94,13 +94,6 @@
             "amountLimit": []
         },
         {
-            "name": "rmStorage",
-            "args": [
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "can_update",
             "args": [
                 "string"
