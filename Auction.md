@@ -17,6 +17,12 @@
     iwallet --account admin -v call <Auction Contract>  setNFT '["<NFT Contract>"]' -s 18.209.137.246:30002
     ```
 
+* Set the Dao contract to be used by the Auction Contract for fee purposes
+
+    ```
+    iwallet --account admin -v call <Auction Contract>  setDao '["<Dao Contract>"]' -s 18.209.137.246:30002
+    ```
+
 * Set Maximum number of order. setMaxOrder[maxOrder]
 
     ```
@@ -26,7 +32,7 @@
 * Put NFT token id into Auction. Parameters: sale[NFTtokenId]
 
     ```
-    iwallet --account admin -v call <Auction Contract>  sale '[1]' -s 18.209.137.246:30002
+    iwallet --account admin -v call <Auction Contract>  sale '["Yokozuna.1"]' -s 18.209.137.246:30002
     ```
 
 * Bid specific order. Parameters: bid[orderId, price]
@@ -39,6 +45,12 @@
 
     ```
     iwallet --account <user> -v call <Auction Contract>  claim '[1]'  -s 18.209.137.246:30002
+    ```
+
+* In case you to set the percentage fee rate. Parameters: setFeeRate["0.05"]
+
+    ```
+    iwallet --account admin -v call <Auction Contract>  setFeeRate '["0.05"]' -s 18.209.137.246:30002
     ```
 
 * In case you want to remove the specific OrderId in Auction. Parameters: claim[orderId]
