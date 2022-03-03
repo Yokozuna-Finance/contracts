@@ -188,7 +188,6 @@ class NFT {
   }
 
   _transferToken(from, to, tokenId) {
-    tokenId = +tokenId;
     let balance_from = this._get('bal.' + from);
     this._put('bal.' + from, balance_from - 1);
 
