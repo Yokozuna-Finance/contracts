@@ -1,7 +1,6 @@
 const NFT_CONTRACT_ID = 'NFT_CONTRACT';
 const DAO_CONTRACT_ID = 'DAO_CONTRACT';
 const TOKEN_SYMBOL = 'zuna';
-const NFT_KEY = 'Yokozuna.';
 const MAX_ORDER_COUNT = 'MAX_ORDER_COUNT';
 const ORDER_ID_KEY = 'ORDERID';
 const ORDER_COUNT_KEY = "ORDERCOUNT";
@@ -146,13 +145,15 @@ class Auction {
   }
 
   _getNFTInfo(contract, id) {
-    const key = 'znft.' + NFT_KEY + id;
+    const key = 'znft.' + id;
     this._equal(this._globalHas(contract, key), false, "NFT token id does not exist!");
     return this._getGlobal(contract, key, 0, true);
   }
 
   _getDao() {
-    return this._get(DAO_CONTRACT_ID, null, 0);
+    const contract = this._get(DAO_CONTRACT_ID, null, 0);
+    this._equal(contract, null, "The Dao ContractID is not set.");
+    return contract;
   }
 
   _getOrderId(){
@@ -393,7 +394,7 @@ class Auction {
 
   _safeTransfer(from, to, amount, symbol, memo){
     this._symbcheck(symbol);
-    blockchain.call("token.iost", "transfer", [symbol, from, to, amount, memo])
+    blockchain.callWithAuth("token.iost", "transfer", [symbol, from, to, amount, memo]);
   }
 
   _f(f){
@@ -477,8 +478,9 @@ class Auction {
     }
   }
 
-  _mint() {
-    blockchain.call(this._getNFT(),"mint",[])[0];
+  _mint(creator) {
+    const caller = tx.publisher;
+    if (creator == caller) blockchain.call(this._getNFT(),"mint",[])[0];
   }
 
   _isOwnerBidder(orderId) {
@@ -517,7 +519,7 @@ class Auction {
       const auctions = this._get(account);
       auctions.orders.forEach((id) => {
        var orderData = this._getOrder(id);
-        this._equal(orderData.tokenId, NFT_KEY + orderId, "Token already in Auction.");
+        this._equal(orderData.tokenId, orderId, "Token already in Auction.");
       });
       return;
     }
@@ -530,7 +532,7 @@ class Auction {
   }
 
   _isInAuction(contract, tokenId) {
-    const tokenOwner = this._getGlobal(contract, 'zun.'+ NFT_KEY + tokenId, 0, true);
+    const tokenOwner = this._getGlobal(contract, 'zun.'+ tokenId, 0, true);
     this._equal(tokenOwner, 0, "token not found");
     if (tokenOwner == blockchain.contractName()) {
       this._orderExist(tokenId);
@@ -587,7 +589,6 @@ class Auction {
 
   bid(orderId, price) {
     const buyer = tx.publisher;
-    this._requireAuth(buyer);
     const contract = this._getNFT();
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
@@ -634,18 +635,14 @@ class Auction {
     return;
   }
 
-  _DaoFee(orderData) {
-    const contract = this._getDao();
-    if (contract !== null) {
-      const memo = 'AUC-FEE-TO-DAO-' + orderData.contract + "-" +  orderData.tokenId;
-      this._safeTransfer(orderData.owner, contract,
-        this._div(orderData.fee, 2, fixFee), orderData.symbol, memo);
-    }
+  _DaoFee(contract, orderData) {
+    const memo = 'AUC-FEE-TO-DAO-' + orderData.contract + "-" +  orderData.tokenId;
+    this._safeTransfer(orderData.owner, contract.toString(),
+      this._div(orderData.fee, 2, fixFee), orderData.symbol, memo);
   }
 
   claim(orderId) {
     const caller = tx.publisher;
-    this._requireAuth(caller);
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
@@ -653,16 +650,16 @@ class Auction {
     if(caller !== orderData.creator && caller !== orderData.bidder) {
         throw "Authorization failed.";
     }
+    const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [
-        orderData.tokenId.toString(),
+        orderData.tokenId,
         orderData.owner,
         orderData.bidder,
         "1",
         memo
     ];
     blockchain.callWithAuth(orderData.contract, 'transfer', JSON.stringify(args));
-    this._DaoFee(orderData);
 
     this._setTotalSell(orderData.owner);
     this._setTotalBuy(orderData.bidder);
@@ -675,8 +672,8 @@ class Auction {
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
-    this._DaoFee(orderData);
-    //this._mint();
+    this._DaoFee(contract, orderData);
+    this._mint(orderData.creator);
     return;
   }
 
