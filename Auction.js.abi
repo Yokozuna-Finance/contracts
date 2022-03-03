@@ -5,7 +5,7 @@
         {
             "name": "sale",
             "args": [
-                "number"
+                "string"
             ],
             "amountLimit": [{
                 "token": "*",
