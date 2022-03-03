@@ -152,7 +152,7 @@ class Auction {
 
   _getDao() {
     const contract = this._get(DAO_CONTRACT_ID, null, 0);
-    this._equal(contract, null);
+    this._equal(contract, null, "The Dao ContractID is not set.");
     return contract;
   }
 
