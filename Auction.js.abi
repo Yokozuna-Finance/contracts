@@ -3,13 +3,6 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "can_update",
-            "args": [
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "sale",
             "args": [
                 "number"
@@ -52,14 +45,7 @@
             "amountLimit": []
         },
         {
-            "name": "rmOrder",
-            "args": [
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
-            "name": "rmStorage",
+            "name": "setDao",
             "args": [
                 "string"
             ],
@@ -97,6 +83,20 @@
             "name": "setExpiry",
             "args": [
                 "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setFeeRate",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "can_update",
+            "args": [
+                "string"
             ],
             "amountLimit": []
         }
