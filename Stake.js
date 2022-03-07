@@ -729,10 +729,6 @@ class Stake {
     tx.publisher);
   }
 
-  getAPY(token){
-    return this._getAPY(token, this._getPoolAllocPercentage(token));
-  }
-
   _getYearlyDistribution(dailyDist, rate){
     var baseSupply = dailyDist / rate;
     var total = 0;
