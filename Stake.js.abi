@@ -197,6 +197,14 @@
             "description": ""
         },
         {
+            "name": "setProducerCoef",
+            "args": [],
+            "amountLimit": [
+                "string"
+            ],
+            "description": ""
+        },
+        {
             "name": "distributeProducerBonus",
             "args": [
                 "string"

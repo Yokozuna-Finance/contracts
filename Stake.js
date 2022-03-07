@@ -1347,6 +1347,12 @@ class Stake {
 
   }
 
+  setProducerCoef(producerCoef) {
+    this._requireOwner();
+    this._mapPut(MAP_PRODUCER_COEF, 'yzblock1', producerCoef, tx.publisher);
+    this._mapPut(MAP_PRODUCER_COEF, 'yzblock2', producerCoef, tx.publisher);
+  }
+
   distributeProducerBonus(usersPerRun){
     usersPerRun = +usersPerRun || 50;
     // get the last userProcessed
