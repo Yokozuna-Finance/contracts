@@ -153,14 +153,6 @@
             "description": ""
         },
         {
-            "name": "getAPY",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
             "name": "updateAllPools",
             "args": [],
             "amountLimit": [],
