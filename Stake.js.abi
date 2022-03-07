@@ -198,10 +198,8 @@
         },
         {
             "name": "setProducerCoef",
-            "args": [],
-            "amountLimit": [
-                "string"
-            ],
+            "args": ["string"],
+            "amountLimit": [],
             "description": ""
         },
         {
