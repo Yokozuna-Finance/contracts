@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = 'aa63';
+const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
 const TOTAL_SUPPLY = 100000000;
 const TOKEN_PRECISION = 6;
 const ROUND_DOWN = 1;
