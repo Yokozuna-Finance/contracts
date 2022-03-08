@@ -45,7 +45,6 @@ class Auction {
     if(!blockchain.requireAuth(blockchain.contractOwner(), 'active')){
       throw 'Require auth error:not contractOwner';
     }
-    return true;
   }
 
   _put(k, v, stringify, p ) {
@@ -166,7 +165,7 @@ class Auction {
   }
 
   _getOrder(orderId){
-    return this._get(ORDER_BASE + orderId);
+    return this._get(ORDER_BASE + orderId, null, true);
   }
 
   _getOrderCount(){
@@ -280,7 +279,7 @@ class Auction {
   }
 
   _getUserData(account){
-    let userData = this._get(NFT_DATA_BASE + account);
+    let userData = this._get(NFT_DATA_BASE + account, null, true);
     if(userData){
       return userData;
     }else{
@@ -326,7 +325,7 @@ class Auction {
   }
 
   _setPrice(price=1) {
-    this._put(PRICE_KEY, price);
+    this._put(PRICE_KEY, this._f(price).toFixed(fixed));
   }
 
   _setPricePerMint(percent) {
@@ -338,15 +337,15 @@ class Auction {
   }
 
   _getInitialPrice() {
-    this._get(INITIAL_PRICE_KEY);
+    this._get(INITIAL_PRICE_KEY, 1, false);
   }
 
   _getPrice() {
-    return this._get(PRICE_KEY);
+    return this._get(PRICE_KEY, 1, true);
   }
 
   _getPricePerMint() {
-    this._get(MINT_PERCENTAGE_KEY);
+    this._get(MINT_PERCENTAGE_KEY, 0, true);
   }
 
   _getDate() {
@@ -354,7 +353,7 @@ class Auction {
   }
 
   _getFeeRate() {
-    return this._get(AUCTION_FEE_RATE, feeRate, 0);
+    return this._get(AUCTION_FEE_RATE, feeRate, true);
   }
 
   _setExpiry(expiry=86400){
@@ -378,7 +377,7 @@ class Auction {
     let initialPrice = this._getInitialPrice();
     if(!initialPrice) {
       initialPrice = this._f("1.00").toFixed(fixed);
-      this._setInitialPrice();
+      this._setInitialPrice(initialPrice);
     }
     let pricePerMint = this._getPricePerMint();
     if (!pricePerMint) {
@@ -466,7 +465,7 @@ class Auction {
 
   _isExpired(orderId) {
     const orderData = this._getOrder(orderId);
-    if (orderData.expire !== null && (tx.time >= orderData.expire)) {
+    if(orderData.expire !== null && (tx.time >= orderData.expire)) {
       return true;
     }
     return false;
@@ -478,24 +477,28 @@ class Auction {
     }
   }
 
-  _mint(creator) {
-    const caller = tx.publisher;
-    if (creator == caller) blockchain.call(this._getNFT(),"mint",[])[0];
+  _mint(account) {
+    const userData = this._getUserData(account);
+    const contextInfo = JSON.parse(blockchain.contextInfo());
+    if (userData.orderCount <= this._get(MAX_ORDER_COUNT, 0, 0) 
+        && contextInfo.caller.is_account) {
+      blockchain.call(this._getNFT(),"mint",[])[0];
+    }
   }
 
   _isOwnerBidder(orderId) {
     const caller = tx.publisher;
-    const orderData = this._getOrder(orderId);
+    const orderData = this._getOrder(orderId.toString());
     return (caller == orderData.creator || caller == orderData.bidder);
   }
 
   _unclaim(account) {
-    var userData = this._getUserData(account);
+    const userData = this._getUserData(account);
     const orders = userData.orders;
     orders.forEach(
       (orderId)=> {
         if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
-          this.claim(orderId);
+          this._claim(orderId, true);
 	}
       }
     );
@@ -542,14 +545,14 @@ class Auction {
 
   }
 
-  _sale(tokenId){
+  _sale(tokenId, publisher=false){
     const contract = this._getNFT();
+    const contractOwner = blockchain.contractOwner();
     this._isInAuction(contract, tokenId);
     const price = this._f(this._checkPrice()).toFixed(fixed);
     const symbol = TOKEN_SYMBOL;
-    const creator = tx.publisher;
-    const orderAccount = blockchain.contractName();
-    this._unclaim(orderAccount);
+    const creator = (publisher) ? blockchain.contractOwner() : tx.publisher;
+    const orderAccount = (publisher) ? blockchain.contractName() : tx.publisher;
     const contractInfo = this._getNFTInfo(contract, tokenId);
     this._lteF(price, "0", "sale price must > 1 " +  symbol);
     const orderId = this._getOrderId();
@@ -574,12 +577,13 @@ class Auction {
     this._addUserSale(orderAccount, orderId);
     this._setOrder(orderId, orderData);
     this._setOrderList(orderAccount);
+    this._unclaim(orderData.owner);
     return;
   }
 
   sale(tokenId) {
-    this._requireOwner();
-    return this._sale(tokenId);
+    this._requireAuth(tx.publisher);
+    return this._sale(tokenId, true);
   }
 
   unsale(orderId) {
@@ -594,7 +598,7 @@ class Auction {
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
     this._notEqual(orderData.contract, contract, "contract mismatch");
     this._equal(orderData.bidder, buyer, "current bidder is you");
-    this._equal(orderData.owner, buyer, "cannot bid yourself asset");
+    this._equal(orderData.creator, buyer, "cannot bid yourself asset");
     this._equal(true, this._isExpired(orderId), "Order is expired");
     const minprice = this._f(price).toFixed(fixed);
     this._lteF(minprice, orderData.price, "bid price should be higher");
@@ -603,10 +607,8 @@ class Auction {
 
     const marketFee = this._multi(minprice, this._getFeeRate(), fixFee);
     this._lteF(marketFee, "0", "marketFee amount error");
-    const fee = this._f(marketFee).toFixed(fixFee);
-    this._gteF(fee, minprice, "Owner amount error");
-    const ownerFee = this._minus(minprice, fee, fixFee);
-
+    const ownerFee = this._f(marketFee).toFixed(fixFee);
+    this._gteF(ownerFee, minprice, "Owner amount error");
     const amount = this._plus(ownerFee, orderData.price, fixed);
 
     if(null !== orderData.bidder){
@@ -637,28 +639,22 @@ class Auction {
 
   _DaoFee(contract, orderData) {
     const memo = 'AUC-FEE-TO-DAO-' + orderData.contract + "-" +  orderData.tokenId;
-    this._safeTransfer(orderData.owner, contract.toString(),
+    this._safeTransfer(orderData.owner, contract,
       this._div(orderData.fee, 2, fixFee), orderData.symbol, memo);
   }
 
-  claim(orderId) {
+  _claim(orderId, triggered=false) {
     const caller = tx.publisher;
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(caller !== orderData.creator && caller !== orderData.bidder) {
-        throw "Authorization failed.";
+    if(caller !== orderData.creator && caller !== orderData.bidder && triggered==false) {
+      throw "Authorization failed.";
     }
     const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
-    const args = [
-        orderData.tokenId,
-        orderData.owner,
-        orderData.bidder,
-        "1",
-        memo
-    ];
+    const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
     blockchain.callWithAuth(orderData.contract, 'transfer', JSON.stringify(args));
 
     this._setTotalSell(orderData.owner);
@@ -673,13 +669,17 @@ class Auction {
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
     this._DaoFee(contract, orderData);
-    this._mint(orderData.creator);
+    this._mint(orderData.owner);
     return;
+  }
+
+  claim(orderId) {
+    this._claim(orderId);
   }
 
   _validateContract(contractID) {
     if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
-      throw "Invalid contract ID."
+      throw "Invalid contract ID.";
     }
   }
 
@@ -736,7 +736,7 @@ class Auction {
   }
 
   can_update(data) {
-    return this._requireOwner();
+    return blockchain.requireAuth(blockchain.contractOwner(), "active");
   }
 
 };
