@@ -375,6 +375,11 @@ class Auction {
     return Math.floor((timestamp - Math.floor(this._getDate())) / (1e9 * 3600 * 24));
   }
 
+  _checkOrderLimit(userData) {
+    if(userData && userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)) return true;
+    return false;
+  }
+
   _checkPrice() {
     let initialPrice = this._getInitialPrice();
     if(!initialPrice) {
@@ -469,13 +474,6 @@ class Auction {
     const orderData = this._getOrder(orderId);
     if(orderData === null) return false;
     if(orderData.expire !== null && (tx.time >= orderData.expire)) {
-      return true;
-    }
-    return false;
-  }
-
-  _checkOrderLimit(userData) {
-    if(userData && userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)){
       return true;
     }
     return false;
