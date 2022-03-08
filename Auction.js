@@ -197,7 +197,8 @@ class Auction {
 
   _addUserSale(account, orderId) {
     const userData = this._getUserData(account);
-    this._checkOrderLimit(userData);
+    this._equal(this._checkOrderLimit(userData), true,
+      "Maximum number of orders have been reached");
 
     if(userData){
       userData.orders.push(orderId);
@@ -209,7 +210,8 @@ class Auction {
 
   _addUserBid(account, orderId){
     const userData = this._getUserData(account);
-    this._checkOrderLimit(userData);
+    this._equal(this._checkOrderLimit(userData), true,
+      "Maximum number of orders have been reached");
 
     userData.bids.push(orderId);
     userData.bidCount ++;
@@ -474,15 +476,15 @@ class Auction {
 
   _checkOrderLimit(userData) {
     if(userData && userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)){
-      throw "Maximum number of orders have been reached";
+      return true;
     }
+    return false;
   }
 
   _mint(account) {
     const userData = this._getUserData(account);
     const contextInfo = JSON.parse(blockchain.contextInfo());
-    if (userData.orderCount <= this._get(MAX_ORDER_COUNT, 0, 0) 
-        && contextInfo.caller.is_account) {
+    if(this._checkOrderLimit(userData) == false && contextInfo.caller.is_account){
       blockchain.call(this._getNFT(),"mint",[])[0];
     }
   }
@@ -558,7 +560,6 @@ class Auction {
     this._lteF(price, "0", "sale price must > 1 " +  symbol);
     const orderId = this._getOrderId();
     const userData = this._getUserData(orderAccount);
-    this._checkOrderLimit(userData);
     this._addOrderCount(1);
 
     const orderData = {
