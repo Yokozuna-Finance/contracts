@@ -488,7 +488,7 @@ class Auction {
 
   _isOwnerBidder(orderId) {
     const caller = tx.publisher;
-    const orderData = this._getOrder(orderId.toString());
+    const orderData = this._getOrder(orderId);
     return (caller == orderData.creator || caller == orderData.bidder);
   }
 
