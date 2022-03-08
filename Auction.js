@@ -18,7 +18,6 @@ const extendTime = 3600;
 const lockTime = 3600;
 
 const fixed = 2;
-const fixFee = 5;
 const feeRate = new Float64(0.05);
 
 const tradeTotal = "tradeTotal_";
@@ -172,6 +171,10 @@ class Auction {
     return this._get(ORDER_COUNT_KEY, 0);
   }
 
+  _getRequest() {
+    return JSON.parse(blockchain.contextInfo());
+  }
+
   _addOrderCount(count){
     this._put(ORDER_COUNT_KEY, this._getOrderCount() + count);
     this._addOrderId(1);
@@ -197,7 +200,8 @@ class Auction {
 
   _addUserSale(account, orderId) {
     const userData = this._getUserData(account);
-    this._checkOrderLimit(userData);
+    this._equal(this._checkOrderLimit(userData), true,
+      "Maximum number of orders have been reached");
 
     if(userData){
       userData.orders.push(orderId);
@@ -209,7 +213,8 @@ class Auction {
 
   _addUserBid(account, orderId){
     const userData = this._getUserData(account);
-    this._checkOrderLimit(userData);
+    this._equal(this._checkOrderLimit(userData), true,
+      "Maximum number of orders have been reached");
 
     userData.bids.push(orderId);
     userData.bidCount ++;
@@ -366,11 +371,16 @@ class Auction {
   }
 
   _extendExpiry(expiry){
-    return expiry + (extendTime * 1e9);
+    return expiry + (Math.floor(this._get(AUCTION_EXPIRY_KEY)) * 1e9);
   }
 
   _getDays(timestamp=tx.time) {
     return Math.floor((timestamp - Math.floor(this._getDate())) / (1e9 * 3600 * 24));
+  }
+
+  _checkOrderLimit(userData) {
+    if(userData && userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)) return true;
+    return false;
   }
 
   _checkPrice() {
@@ -472,17 +482,10 @@ class Auction {
     return false;
   }
 
-  _checkOrderLimit(userData) {
-    if(userData && userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)){
-      throw "Maximum number of orders have been reached";
-    }
-  }
-
   _mint(account) {
     const userData = this._getUserData(account);
-    const contextInfo = JSON.parse(blockchain.contextInfo());
-    if (userData.orderCount <= this._get(MAX_ORDER_COUNT, 0, 0) 
-        && contextInfo.caller.is_account) {
+    const request = this._getRequest();
+    if(this._checkOrderLimit(userData) == false && request.caller.is_account){
       blockchain.call(this._getNFT(),"mint",[])[0];
     }
   }
@@ -558,7 +561,6 @@ class Auction {
     this._lteF(price, "0", "sale price must > 1 " +  symbol);
     const orderId = this._getOrderId();
     const userData = this._getUserData(orderAccount);
-    this._checkOrderLimit(userData);
     this._addOrderCount(1);
 
     const orderData = {
@@ -592,6 +594,11 @@ class Auction {
     return this._unsale(orderId);
   }
 
+  _checkBalance(orderData) {
+    return this._f(blockchain.call("token.iost", "balanceOf", [
+      orderData.symbol, orderData.bidder])[0]);
+  }
+
   bid(orderId, price) {
     const buyer = tx.publisher;
     const contract = this._getNFT();
@@ -606,14 +613,14 @@ class Auction {
     this._lteF(orderData.price, "0", "Price check error");
     this._lteF(minprice, "0", "Price check error");
 
-    const marketFee = this._multi(minprice, this._getFeeRate(), fixFee);
+    const marketFee = this._multi(minprice, this._getFeeRate(), fixed);
     this._lteF(marketFee, "0", "marketFee amount error");
-    const ownerFee = this._f(marketFee).toFixed(fixFee);
+    const ownerFee = this._f(marketFee).toFixed(fixed);
     this._gteF(ownerFee, minprice, "Owner amount error");
-    const amount = this._plus(ownerFee, orderData.price, fixed);
+    const amount = this._plus(ownerFee, minprice, fixed);
 
     if(null !== orderData.bidder){
-      this._safeTransfer(blockchain.contractName(), orderData.bidder, amount,
+      this._safeTransfer(blockchain.contractName(), orderData.bidder, this._f(orderData.price),
         orderData.symbol, "bid order " + orderId + " be surpassed ");
       this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);//delete last bidder
     }
@@ -624,13 +631,8 @@ class Auction {
     orderData.expire = (orderData.expire===null) ? this._getExpiry(): this._extendExpiry(
       orderData.expire);
     this._setOrder(orderId, orderData);
-
-    const accountMoney = blockchain.call("token.iost", "balanceOf", [
-      orderData.symbol,
-      buyer])[0];
-    this._ltF(accountMoney, amount,
+    this._ltF(this._checkBalance(orderData), amount,
       "Your " + orderData.symbol + " balance is not enough");
-
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), amount, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);
@@ -641,7 +643,7 @@ class Auction {
   _DaoFee(contract, orderData) {
     const memo = 'AUC-FEE-TO-DAO-' + orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(orderData.owner, contract,
-      this._div(orderData.fee, 2, fixFee), orderData.symbol, memo);
+      this._div(orderData.fee, 2, fixed), orderData.symbol, memo);
   }
 
   _claim(orderId, triggered=false) {
