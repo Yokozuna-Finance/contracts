@@ -465,6 +465,7 @@ class Auction {
 
   _isExpired(orderId) {
     const orderData = this._getOrder(orderId);
+    if(orderData === null) return false;
     if(orderData.expire !== null && (tx.time >= orderData.expire)) {
       return true;
     }
