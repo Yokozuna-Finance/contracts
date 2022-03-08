@@ -153,14 +153,6 @@
             "description": ""
         },
         {
-            "name": "getAPY",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
             "name": "updateAllPools",
             "args": [],
             "amountLimit": [],
@@ -193,6 +185,12 @@
         {
             "name": "processProducerBonus",
             "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "setProducerCoef",
+            "args": ["string"],
             "amountLimit": [],
             "description": ""
         },

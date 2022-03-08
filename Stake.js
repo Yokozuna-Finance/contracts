@@ -729,10 +729,6 @@ class Stake {
     tx.publisher);
   }
 
-  getAPY(token){
-    return this._getAPY(token, this._getPoolAllocPercentage(token));
-  }
-
   _getYearlyDistribution(dailyDist, rate){
     var baseSupply = dailyDist / rate;
     var total = 0;
@@ -1345,6 +1341,12 @@ class Stake {
       blockchain.contractName()
     ]);
 
+  }
+
+  setProducerCoef(producerCoef) {
+    this._requireOwner();
+    this._mapPut(MAP_PRODUCER_COEF, 'yzblock01', producerCoef, tx.publisher);
+    this._mapPut(MAP_PRODUCER_COEF, 'yzblock02', producerCoef, tx.publisher);
   }
 
   distributeProducerBonus(usersPerRun){
