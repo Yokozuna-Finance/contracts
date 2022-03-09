@@ -1,0 +1,15 @@
+base58==2.1.1
+certifi==2021.10.8
+charset-normalizer==2.0.12
+ecdsa==0.17.0
+ed25519==1.5
+googleapis-common-protos==1.55.0
+grpcio==1.44.0
+idna==3.3
+protobuf==3.19.4
+protobuf3-to-dict==0.1.5
+pyost==3.0.7
+python-decouple==3.6
+requests==2.27.1
+six==1.16.0
+urllib3==1.26.8

@@ -1336,8 +1336,7 @@ class Stake {
       this._mapPut(MAP_PRODUCER_COEF, producerName, newCoef, tx.publisher);
 
     }
-
-    blockchain.callWithAuth("vote_producer.iost", "voterWithdraw", [
+    return blockchain.callWithAuth("vote_producer.iost", "voterWithdraw", [
       blockchain.contractName()
     ]);
 
@@ -1399,6 +1398,7 @@ class Stake {
         this._put('lup', lastUserProcessed);
     }
     blockchain.receipt(JSON.stringify(["Processed " + (idx + userCount) + '/' + userLength]))
+    return [idx + userCount, userLength];
   }
 
   checkUserWithdrawals(usersPerRun){
