@@ -15,6 +15,7 @@ const AUCTION_EXPIRY_KEY = "EXPIRY";
 const AUCTION_FEE_RATE = "FEE_RATE";
 
 const fixed = 2;
+const priceHike = 0.01;
 
 const tradeTotal = "tradeTotal_";
 const tradeUser = "tradeUser_";
@@ -333,10 +334,13 @@ class Auction {
     this._put(MINT_PERCENTAGE_KEY, percent);
   }
 
-  _setMaxOrder(maxNumber=18) {
+  _setMaxOrder(maxNumber=9) {
     this._put(MAX_ORDER_COUNT, maxNumber);
   }
 
+  _priceIncrease() {
+    this._setPrice(this._plus(this._getPrice(), priceHike, fixed));
+  }
   _getInitialPrice() {
     this._get(INITIAL_PRICE_KEY, 1, false);
   }
@@ -655,6 +659,7 @@ class Auction {
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
     this._DaoFee(contract, orderData);
+    this._priceIncrease();
     this._mint(orderData.owner);
     return;
   }
