@@ -168,8 +168,6 @@ class NFT {
         creator: blockchain.contractName()
     }
 
-    console.log('tokenInfo:', tokenInfo);
-
     this._put('zun.' + currentID, owner);
     this._put('znft.' + currentID, tokenInfo, true);
 
@@ -200,6 +198,16 @@ class NFT {
 
     const message = "transfer " + tokenId + " to " + to + " from " + from;
     blockchain.receipt(message);
+  }
+
+  _getOrderCount() {
+    // NFT_DATA_BASE + account
+    const auctionContract = this._getAuction();
+    const orderData = this._globalGet(auctionContract, 'ORDER_DATA.' + auctionContract, null); 
+    if (orderData && orderData.orderCount) {
+      return orderData.orderCount;
+    }
+    return 0;
   }
 
   generateNFT(gene, meta, ability) { 
@@ -274,9 +282,9 @@ class NFT {
 
   mint() { 
     // generate new NFT
-    let tokenList = this._mapGet('userNFT', this._getAuction(), []);
+    //let tokenList = this._mapGet('userNFT', this._getAuction(), []);
 
-    if (tokenList.length < AUCTION_SLOT) {
+    if (this._getOrderCount() < AUCTION_SLOT) {
       // decide which 2 nfts to mix???
       let tokenID = this._generateRandomNFT();
       blockchain.call(
@@ -301,7 +309,6 @@ class NFT {
 
     let tokenList = this._mapGet('userNFT', this._getAuction(), []);
 
-
     let random1 = _random(tokenList.length);
     let random2 = _random(tokenList.length);
     let nftID1 = tokenList[random1];
@@ -310,8 +317,6 @@ class NFT {
     let nftInfo1 = this._get('znft.' + nftID1);
     let nftInfo2 = this._get('znft.' + nftID2);
     return this._mint(nftInfo1, nftInfo2, this._getAuction(), false);
-
-
   }
 
   _mint(nft1, nft2, owner, fuse=false) {
@@ -343,9 +348,7 @@ class NFT {
 
   updateAuctionSlot() { 
     // check if we need to mint new nft;
-    let tokenList = this._mapGet('userNFT', this._getAuction(), []);
-
-    while (tokenList.length <= AUCTION_SLOT) {
+    while (this._getOrderCount() <= AUCTION_SLOT) {
       this._generateRandomNFT();    
     }
   }
