@@ -14,9 +14,6 @@ const INITIAL_PRICE_KEY = "INITIAL_PRICE";
 const AUCTION_EXPIRY_KEY = "EXPIRY";
 const AUCTION_FEE_RATE = "FEE_RATE";
 
-const extendTime = 3600;
-const lockTime = 3600;
-
 const fixed = 2;
 const feeRate = new Float64(0.05);
 
@@ -471,7 +468,7 @@ class Auction {
 
   _isExpired(orderId) {
     const orderData = this._getOrder(orderId);
-    if (!orderData !== null) {
+    if (orderData) {
         if (orderData.expire !== null && (tx.time >= orderData.expire)) {
 	  return true;
 	}
@@ -487,10 +484,9 @@ class Auction {
     }
   }
 
-  _isOwnerBidder(orderId) {
+  _isOwnerBidder(orderData) {
     const caller = tx.publisher;
-    const orderData = this._getOrder(orderId);
-    return (caller == orderData.creator || caller == orderData.bidder);
+    return (caller !== orderData.creator && caller !== orderData.bidder);
   }
 
   _unclaim(account) {
@@ -498,7 +494,7 @@ class Auction {
     const orders = userData.orders;
     orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
+        if (this._isExpired(orderId) === true) {
           this._claim(orderId, true);
 	}
       }
@@ -612,8 +608,8 @@ class Auction {
 
     if(null !== orderData.bidder){
       this._safeTransfer(blockchain.contractName(), orderData.bidder, this._f(orderData.price),
-        orderData.symbol, "bid order " + orderId + " be surpassed ");
-      this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);//delete last bidder
+        orderData.symbol, buyer + " is the new bidder for order " + orderId);
+      this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     }
     orderData.price = minprice;
     orderData.bidder = buyer;
@@ -642,9 +638,7 @@ class Auction {
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(caller !== orderData.creator && caller !== orderData.bidder && triggered==false) {
-      throw "Authorization failed.";
-    }
+    if(this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
