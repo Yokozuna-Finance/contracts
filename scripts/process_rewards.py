@@ -31,15 +31,24 @@ class RewardsProcessor:
         self.acc.add_key_pair(acc_kp, 'active')
         self.acc.add_key_pair(acc_kp, 'owner')
 
-
     def _execute_tx(self, tx):
         #try:
         self.acc.sign_publish(tx)
         receipt = self.iost.send_and_wait_tx(tx)
         #except (TransactionError, TimeoutError) as err:
         #    print(err)
+        return receipt
+
+    def _parse_returns(self, receipt):
         return json.loads(json.loads(receipt.returns[0])[0])
 
+    def _valid_voter_withdraw_receipt(self, receipts):
+        if len(receipts) > 0:
+            for receipt in receipts:
+                if receipt.func_name == 'vote_producer.iost/voterWithdraw':
+                    print(receipts.func_name, receipts.content)
+                    return True
+        return False
 
     def _get_storage_data(self, contract_id, key):
         resp = requests.post(
@@ -53,32 +62,29 @@ class RewardsProcessor:
         )
         return json.loads(resp.json()['data'])
 
-
     def _get_total_users(self):
         return len(self._get_storage_data(config('STAKE_CONTRACT_ID'), 'userBalanceList'))
 
-
     def process(self):
         # call processProducerBonus
+        print("Running processProducerBonus...")
         tx = self.iost.create_call_tx(config('STAKE_CONTRACT_ID'), 'processProducerBonus')
         response = self._execute_tx(tx)
-        
-        if response[0]:
-            # processed = 0
-            # total = self._get_total_users()
 
+        if self._valid_voter_withdraw_receipt(response.receipts) is True:
+            print("Running distributeProducerBonus...")
             while True:
                 tx = self.iost.create_call_tx(
                     config('STAKE_CONTRACT_ID'),
                     'distributeProducerBonus',
                     config('USERS_PER_RUN')
                 )
-                response = self._execute_tx(tx)
+                response = self._parse_returns(self._execute_tx(tx))
                 print('Processed user {} of {}...'.format(*response))
                 if response[0] == response[1]:
                     break
         else:
-            print("Got no response from the voterWithdraw, Terminating..")
+            print("Got no receipts from the voterWithdraw ABI call, Terminating..")
 
 if __name__ ==  "__main__":
     rprocessor = RewardsProcessor()
