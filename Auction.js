@@ -471,12 +471,12 @@ class Auction {
 
   _isExpired(orderId) {
     const orderData = this._getOrder(orderId);
-    if (orderData !== null) {
+    if (!orderData !== null) {
         if (orderData.expire !== null && (tx.time >= orderData.expire)) {
 	  return true;
 	}
     }
-    return true;
+    return false;
   }
 
   _mint(account) {
