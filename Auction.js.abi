@@ -87,13 +87,6 @@
             "amountLimit": []
         },
         {
-            "name": "setFeeRate",
-            "args": [
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "can_update",
             "args": [
                 "string"

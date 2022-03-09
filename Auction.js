@@ -14,9 +14,6 @@ const INITIAL_PRICE_KEY = "INITIAL_PRICE";
 const AUCTION_EXPIRY_KEY = "EXPIRY";
 const AUCTION_FEE_RATE = "FEE_RATE";
 
-const extendTime = 3600;
-const lockTime = 3600;
-
 const fixed = 2;
 const feeRate = new Float64(0.05);
 
@@ -357,11 +354,7 @@ class Auction {
     return this._get(DATE_KEY);
   }
 
-  _getFeeRate() {
-    return this._get(AUCTION_FEE_RATE, feeRate, true);
-  }
-
-  _setExpiry(expiry=86400){
+  _setExpiry(expiry=3600){
     this._put(AUCTION_EXPIRY_KEY, expiry);
   }
 
@@ -475,9 +468,10 @@ class Auction {
 
   _isExpired(orderId) {
     const orderData = this._getOrder(orderId);
-    if(orderData === null) return false;
-    if(orderData.expire !== null && (tx.time >= orderData.expire)) {
-      return true;
+    if (orderData) {
+        if (orderData.expire !== null && (tx.time >= orderData.expire)) {
+	  return true;
+	}
     }
     return false;
   }
@@ -490,10 +484,9 @@ class Auction {
     }
   }
 
-  _isOwnerBidder(orderId) {
+  _isOwnerBidder(orderData) {
     const caller = tx.publisher;
-    const orderData = this._getOrder(orderId);
-    return (caller == orderData.creator || caller == orderData.bidder);
+    return (caller !== orderData.creator && caller !== orderData.bidder);
   }
 
   _unclaim(account) {
@@ -501,7 +494,7 @@ class Auction {
     const orders = userData.orders;
     orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
+        if (this._isExpired(orderId) === true) {
           this._claim(orderId, true);
 	}
       }
@@ -613,28 +606,21 @@ class Auction {
     this._lteF(orderData.price, "0", "Price check error");
     this._lteF(minprice, "0", "Price check error");
 
-    const marketFee = this._multi(minprice, this._getFeeRate(), fixed);
-    this._lteF(marketFee, "0", "marketFee amount error");
-    const ownerFee = this._f(marketFee).toFixed(fixed);
-    this._gteF(ownerFee, minprice, "Owner amount error");
-    const amount = this._plus(ownerFee, minprice, fixed);
-
     if(null !== orderData.bidder){
       this._safeTransfer(blockchain.contractName(), orderData.bidder, this._f(orderData.price),
-        orderData.symbol, "bid order " + orderId + " be surpassed ");
-      this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);//delete last bidder
+        orderData.symbol, buyer + " is the new bidder for order " + orderId);
+      this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     }
-    orderData.fee = ownerFee;
     orderData.price = minprice;
     orderData.bidder = buyer;
     orderData.orderTime = tx.time;
     orderData.expire = (orderData.expire===null) ? this._getExpiry(): this._extendExpiry(
       orderData.expire);
     this._setOrder(orderId, orderData);
-    this._ltF(this._checkBalance(orderData), amount,
+    this._ltF(this._checkBalance(orderData), minprice,
       "Your " + orderData.symbol + " balance is not enough");
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
-    this._safeTransfer(buyer, blockchain.contractName(), amount, orderData.symbol, memo);
+    this._safeTransfer(buyer, blockchain.contractName(), minprice, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);
     this._unclaim(orderData.owner);
     return;
@@ -643,7 +629,7 @@ class Auction {
   _DaoFee(contract, orderData) {
     const memo = 'AUC-FEE-TO-DAO-' + orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(orderData.owner, contract,
-      this._div(orderData.fee, 2, fixed), orderData.symbol, memo);
+      this._div(orderData.price, 2, fixed), orderData.symbol, memo);
   }
 
   _claim(orderId, triggered=false) {
@@ -652,9 +638,7 @@ class Auction {
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(caller !== orderData.creator && caller !== orderData.bidder && triggered==false) {
-      throw "Authorization failed.";
-    }
+    if(this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
@@ -731,11 +715,6 @@ class Auction {
     this._requireOwner();
     this._setExpiry(expiry);
     return;
-  }
-
-  setFeeRate(rate) {
-    this._requireOwner();
-    this._put(AUCTION_FEE_RATE, rate);
   }
 
   can_update(data) {
