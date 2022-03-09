@@ -15,7 +15,6 @@ const AUCTION_EXPIRY_KEY = "EXPIRY";
 const AUCTION_FEE_RATE = "FEE_RATE";
 
 const fixed = 2;
-const feeRate = new Float64(0.05);
 
 const tradeTotal = "tradeTotal_";
 const tradeUser = "tradeUser_";
