@@ -9,13 +9,12 @@ const NFT_DATA_BASE = 'ORDER_DATA.';
 const NFT_AUCTION_KEY = "NFT_ORDERS";
 const DATE_KEY = "DATE_STARTED";
 const PRICE_KEY = "CURRENT_PRICE";
-const MINT_PERCENTAGE_KEY = "MINT_PERCENTAGE";
+const PRICE_PER_MINT_KEY = "PRICE_PER_MINT";
 const INITIAL_PRICE_KEY = "INITIAL_PRICE";
 const AUCTION_EXPIRY_KEY = "EXPIRY";
 const AUCTION_FEE_RATE = "FEE_RATE";
 
 const fixed = 2;
-const priceHike = 0.01;
 
 const tradeTotal = "tradeTotal_";
 const tradeUser = "tradeUser_";
@@ -330,19 +329,16 @@ class Auction {
     this._put(PRICE_KEY, this._f(price).toFixed(fixed));
   }
 
-  _setPricePerMint(percent) {
-    this._put(MINT_PERCENTAGE_KEY, percent);
+  _setPricePerMint(price) {
+    this._put(PRICE_PER_MINT_KEY, price);
   }
 
   _setMaxOrder(maxNumber=9) {
     this._put(MAX_ORDER_COUNT, maxNumber);
   }
 
-  _priceIncrease() {
-    this._setPrice(this._plus(this._getPrice(), priceHike, fixed));
-  }
   _getInitialPrice() {
-    this._get(INITIAL_PRICE_KEY, 1, false);
+    return this._get(INITIAL_PRICE_KEY, 1, false);
   }
 
   _getPrice() {
@@ -350,7 +346,7 @@ class Auction {
   }
 
   _getPricePerMint() {
-    this._get(MINT_PERCENTAGE_KEY, 0, true);
+    return this._get(PRICE_PER_MINT_KEY, 0, true);
   }
 
   _getDate() {
@@ -391,9 +387,9 @@ class Auction {
         this._setPricePerMint(pricePerMint);
     }
 
-    const price = initialPrice * (this._getDays()==0) ? 1: this._getDays();
-    const mintedPrice = this._multi(price, pricePerMint, fixed);
-    this._setPrice(this._plus(price, mintedPrice, fixed));
+    const dailyPrice = initialPrice * (this._getDays()==0) ? 1: this._getDays();
+    const totalPrice = this._plus(this._getPrice(), pricePerMint, fixed);
+    this._setPrice(this._multi(totalPrice, dailyPrice, fixed));
     return this._getPrice();
   }
 
@@ -659,7 +655,6 @@ class Auction {
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
     this._DaoFee(contract, orderData);
-    this._priceIncrease();
     this._mint(orderData.owner);
     return;
   }
@@ -709,9 +704,9 @@ class Auction {
     return;
   }
 
-  setPricePerMint(percent) {
+  setPricePerMint(price) {
     this._requireOwner();
-    this._setPricePerMint(percent);
+    this._setPricePerMint(price);
     return;
   }
 
