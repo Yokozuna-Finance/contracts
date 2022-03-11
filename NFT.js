@@ -115,6 +115,10 @@ class NFT {
     return "Yokozuna." + currentID.toString();
   }
 
+  _getRequest() {
+    return JSON.parse(blockchain.contextInfo());
+  }
+
   _isNotNull(val, err) {
     if (val === null) throw err;
   }
@@ -287,12 +291,19 @@ class NFT {
     if (this._getOrderCount() < AUCTION_SLOT) {
       // decide which 2 nfts to mix???
       let tokenID = this._generateRandomNFT();
+      return this._moveToAuction(tokenID);
+    }
+  }
+
+  _moveToAuction(tokenID) {
+    if (this._getRequest().caller.is_account) {
       blockchain.call(
-        this._getAuction(), 
-        "sale", 
+        this._getAuction(),
+        "sale",
         [tokenID]
       )[0];
     }
+    return tokenID;
   }
 
   _generateRandomNFT(){
