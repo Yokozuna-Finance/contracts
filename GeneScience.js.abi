@@ -41,6 +41,23 @@
             "description": ""
         },
         {
+            "name": "setGeneMultiplier",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "calculatePower",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "mixAbilities",
             "args": [
                 "string",
