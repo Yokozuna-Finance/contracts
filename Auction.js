@@ -480,6 +480,8 @@ class Auction {
     const request = this._getRequest();
     if(this._checkOrderLimit(userData) == false && request.caller.is_account){
       blockchain.call(this._getNFT(),"mint",[])[0];
+      const tokenId = blockchain.call(this._getNFT(),"mint",[])[0];
+      this.sale(tokenId);
     }
   }
 
