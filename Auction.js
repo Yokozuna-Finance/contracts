@@ -487,7 +487,7 @@ class Auction {
   _isOwnerBidder(orderId) {
     const orderData = this._getOrder(orderId);
     const caller = tx.publisher;
-    return (caller !== orderData.creator && caller !== orderData.bidder);
+    return (caller == orderData.creator || caller == orderData.bidder);
   }
 
   _unclaim(account) {
@@ -495,7 +495,7 @@ class Auction {
     const orders = userData.orders;
     orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId)) {
+        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
           this._claim(orderId, true);
 	}
       }
@@ -644,7 +644,7 @@ class Auction {
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(this._isOwnerBidder(orderId) && triggered==false) throw "Authorization failed.";
+    if(!this._isOwnerBidder(orderId) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
