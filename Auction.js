@@ -484,7 +484,8 @@ class Auction {
     }
   }
 
-  _isOwnerBidder(orderData) {
+  _isOwnerBidder(orderId) {
+    const orderData = this._getOrder(orderId);
     const caller = tx.publisher;
     return (caller !== orderData.creator && caller !== orderData.bidder);
   }
@@ -494,7 +495,7 @@ class Auction {
     const orders = userData.orders;
     orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true) {
+        if (this._isExpired(orderId) === true and this._isOwnerBidder(orderId)) {
           this._claim(orderId, true);
 	}
       }
@@ -573,7 +574,6 @@ class Auction {
     this._addUserSale(orderAccount, orderId);
     this._setOrder(orderId, orderData);
     this._setOrderList(orderAccount);
-    this._unclaim(orderData.owner);
     return;
   }
 
@@ -632,13 +632,19 @@ class Auction {
       this._div(orderData.price, 2, fixed), orderData.symbol, memo);
   }
 
+  _burn(orderData) {
+    const memo = 'AUC-BURN-TO-DEADADDR' + orderData.contract + "-" +  orderData.tokenId;
+    this._safeTransfer(orderData.owner, 'deadaddr',
+      this._div(orderData.price, 2, fixed), orderData.symbol, memo);
+  }
+
   _claim(orderId, triggered=false) {
     const caller = tx.publisher;
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(tx.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
+    if(this._isOwnerBidder(orderId) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
@@ -656,6 +662,7 @@ class Auction {
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
     this._DaoFee(contract, orderData);
+    this._burn(orderData);
     this._mint(orderData.owner);
     return;
   }
