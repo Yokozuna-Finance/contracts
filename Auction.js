@@ -495,7 +495,7 @@ class Auction {
     const orders = userData.orders;
     orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true and this._isOwnerBidder(orderId)) {
+        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId)) {
           this._claim(orderId, true);
 	}
       }
