@@ -1,6 +1,4 @@
 const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
-const FUSION_FEE = 2;
-const AUCTION_SLOT = 18;
 
 class NFT {
 
@@ -15,10 +13,18 @@ class NFT {
     this._put('gene', contractID, tx.publisher)
   }
 
+  setFusionFee(amount) {
+    this._requireOwner();
+    this._put('FUSION_FEE', +amount, false);
+  }
+
+  _getFusionFee() {
+    this._get('FUSION_FEE', 2)
+  }
+
   _getGeneScience(){
     return this._get('gene',"", true);
   }
-
 
   setAuction(contractID){
     this._requireOwner()
@@ -157,20 +163,29 @@ class NFT {
     this._addToTokenList(tokenId, userTo);
   }
 
-  _generate(gene, meta, ability, owner) {
+  _generate(gene, ability, owner) {
     if(gene === undefined) {
         throw 'Invalid gene';
     }
 
     let currentID = this._generateID();
+    let power = blockchain.call(
+      this._getGeneScience(), 
+      "calculatePower", 
+      [gene, ability]
+    )[0];
+
     // NFT generation 
     let tokenInfo = {
         owner: owner,
         id: currentID,
         gene: gene,
         ability: ability,
+        pushPower: power,
         creator: blockchain.contractName()
     }
+
+    console.log("TokenInfo:", tokenInfo);
 
     this._put('zun.' + currentID, owner);
     this._put('znft.' + currentID, tokenInfo, true);
@@ -214,9 +229,14 @@ class NFT {
     return 0;
   }
 
-  generateNFT(gene, meta, ability) { 
+  _getMaxOrderCOunt() {
+    const auctionContract = this._getAuction();
+    return this._globalGet(auctionContract, 'MAX_ORDER_COUNT', 0);     
+  }
+
+  generateNFT(gene, ability) { 
     this._requireOwner();
-    return this._generate(gene, meta, ability, this._getAuction());
+    return this._generate(gene, ability, this._getAuction());
   }
 
   generateInitialNFT() {
@@ -224,18 +244,29 @@ class NFT {
 
     let currentID = this._get('zid', 1);
     if (currentID > 1) {
-        throw 'This ABI method can only be called once.'
+        throw 'This ABI method can only be called once.';
     }
-    this._generate('111111111111111111111111111111111111111111111111', '', '30-30-30', this._getAuction());
-    this._generate('222222222222222222222222222222222222222222222222', '', '30-30-30', this._getAuction());
-    this._generate('333333333333333333333333333333333333333333333333', '', '30-30-30', this._getAuction());
-    this._generate('444444444444444444444444444444444444444444444444', '', '30-30-30', this._getAuction());
-    this._generate('123123123123123123123123123123123123123123123123', '', '30-30-30', this._getAuction());
-    this._generate('111122223333444411112222333344441111222233334444', '', '30-30-30', this._getAuction());
-    this._generate('123412341234123412341234123412341234123412341234', '', '30-30-30', this._getAuction());
-    this._generate('444433332222111144443333222211114444333322221111', '', '30-30-30', this._getAuction());
-    this._generate('333322221111333322221111333322221111333322221111', '', '30-30-30', this._getAuction());
-    this._generate('444433334444333344443333444433334444333344443333', '', '30-30-30', this._getAuction());
+
+    let seed = block.time / 1000;
+    function _random(mod=100) {
+      seed ^= seed << 13; 
+      seed ^= seed >> 17;
+      seed ^= seed << 5;
+      var res = (seed <0) ? ~seed+1 : seed;
+      return res % mod;
+    }
+
+    for (let x = 0; x < 10; x++) {
+      let genes = '';
+      for (let i = 0; i < 48; i++) {
+        genes += (_random(8) + 1) .toString();
+      }
+
+      let attributes = (_random(30) + 1).toString() + '-' + 
+        (_random(30) + 1).toString() + '-' + 
+        (_random(30) + 1).toString();
+      this._generate(genes, attributes, this._getAuction());
+    }
   }
 
   transfer(tokenId, from, to, amount, memo) {
@@ -287,8 +318,7 @@ class NFT {
   mint() { 
     // generate new NFT
     //let tokenList = this._mapGet('userNFT', this._getAuction(), []);
-
-    if (this._getOrderCount() < AUCTION_SLOT) {
+    if (this._getOrderCount() < this._getMaxOrderCOunt()) {
       // decide which 2 nfts to mix???
       let tokenID = this._generateRandomNFT();
       return this._moveToAuction(tokenID);
@@ -307,9 +337,7 @@ class NFT {
   }
 
   _generateRandomNFT(){
-
     let seed = block.time / 1000;
-
     function _random(mod=100) {
       seed ^= seed << 13; 
       seed ^= seed >> 17;
@@ -345,8 +373,7 @@ class NFT {
     )[0];
 
     return this._generate(
-      mutated_gene, 
-      '', 
+      mutated_gene,
       mutated_ability,
       owner
     );
@@ -354,20 +381,25 @@ class NFT {
 
   _burn(nftID) {
     // remove it
-    this.transfer(nftID, tx.publisher, 'deadaddr', '1', 'burn nft token')
+    this.transfer(nftID, tx.publisher, 'deadaddr', '1', 'burn nft token');
   }
 
   updateAuctionSlot() { 
     // check if we need to mint new nft;
-    while (this._getOrderCount() <= AUCTION_SLOT) {
-      this._generateRandomNFT();    
+    while (this._getOrderCount() <= this._getMaxOrderCOunt()) { 
+      let tokenID = this._generateRandomNFT();
+      blockchain.call(
+        this._getAuction(), 
+        "sale", 
+        [tokenID]
+      )[0];  
     }
   }
 
   fuse(nftID1, nftID2) {
     // merge two nft
     if (nftID1 === nftID2) {
-      throw "Cannot fuse same token."
+      throw "Cannot fuse same token.";
     }
 
     let owner1 = this._get('zun.' + nftID1);
@@ -377,7 +409,7 @@ class NFT {
     let nftInfo2 = this._get('znft.' + nftID2);
 
     if (owner1 != tx.publisher || owner2 != tx.publisher) {
-      throw "Cannot fuse token that is not yours."
+      throw "Cannot fuse token that is not yours.";
     }
 
     // collect fee
@@ -385,7 +417,7 @@ class NFT {
       [YOKOZUNA_TOKEN_SYMBOL,
        tx.publisher,
        blockchain.contractName(),
-       FUSION_FEE.toString(),
+       this._getFusionFee().toString(),
        "Transaction fee."]
     );
 
@@ -402,19 +434,19 @@ class NFT {
     const orderIDs = this._globalGet(this._getAuction(), 'ORDER_DATA.' + tx.publisher).orders;
 
     for (let i = 0; i < orderIDs.length; i++) {
-        // get order details and check if it is already expire
-        let orderData = this._globalGet(this._getAuction(), 'ORDER.' + orderIDs[i].toString());
-        if (orderData.expire < block.time) {
-            const approver = this._get('app.' + orderData.tokenId, null);
-            if (approver != orderData.bidder) {
-              this.approve(orderData.bidder, orderData.tokenId)    
-            }    
-        }
+      // get order details and check if it is already expire
+      let orderData = this._globalGet(this._getAuction(), 'ORDER.' + orderIDs[i].toString());
+      if (orderData.expire < block.time) {
+        const approver = this._get('app.' + orderData.tokenId, null);
+        if (approver != orderData.bidder) {
+          this.approve(orderData.bidder, orderData.tokenId);
+        }    
+      }
     } 
   }
 
   version(){
-    return '0.0.1'
+    return '0.0.1';
   }
 }
 

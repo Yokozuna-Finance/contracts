@@ -31,6 +31,17 @@ class GeneScience {
     } 
   }
 
+  _put(k, v, stringify, p) {
+    if (p === undefined) {
+        p = tx.publisher;
+    }
+    if (stringify === false) {
+      storage.put(k, v, p);
+    } else {
+      storage.put(k, JSON.stringify(v), p);
+    }
+  }
+
   hexToBn(hex) {
     if (hex.length % 2) {
       hex = '0' + hex;
@@ -91,6 +102,37 @@ class GeneScience {
     return status == 1 || now < until;
   }
 
+  setGeneMultiplier(multiplier) {
+    this._requireOwner();
+    multiplier = +multiplier;
+    this._put('multiplier', multiplier)
+  }
+
+  _getMultiplier() {
+    return this._get('multiplier', 1);
+  }
+
+  calculatePower(gene, ability) {
+    const multiplier = this._getMultiplier();
+    ability = ability.split('-');
+    let geneSum = 0;
+    for (let i = 0; i < gene.length; i++) {
+      if(KAI_MAPPING[gene[i]] !== undefined) {
+        geneSum += (KAI_MAPPING[gene[i]] + 1);
+      }
+    }
+
+    let abSum = 0;
+    for (let i = 0; i < ability.length; i++) {
+      let ab = +ability[i];
+      if (ab !== NaN) {
+        abSum += ab;  
+      }
+    }
+
+    return (geneSum * multiplier) + abSum;
+  }
+
   mixAbilities(ability1, ability2, fuse) {
     ability1 = ability1.split('-');
     ability2 = ability2.split('-');
@@ -135,9 +177,6 @@ class GeneScience {
   }
 
   mixGenes(mgenes, sgenes, fuse) {
-    console.log('mgenes', mgenes);
-    console.log('sgenes', sgenes);
-
     if (mgenes.length != sgenes.length) {
       throw "Gene length mismatch."
     }
