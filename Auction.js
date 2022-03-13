@@ -633,7 +633,7 @@ class Auction {
   }
 
   _burn(orderData) {
-    const memo = 'AUC-BURN-TO-DEADADDR' + orderData.contract + "-" +  orderData.tokenId;
+    const memo = 'AUC-BURN-TO-DEADADDR-' + orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(orderData.owner, 'deadaddr',
       this._div(orderData.price, 2, fixed), orderData.symbol, memo);
   }
