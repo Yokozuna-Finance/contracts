@@ -317,7 +317,7 @@ class Auction {
   }
 
   _setDate(timeStamp) {
-    const txTime = (timeStamp)? timeStamp: tx.time;
+    const txTime = (timeStamp)? timeStamp: block.time;
     this._put(DATE_KEY, txTime);
   }
 
@@ -359,14 +359,14 @@ class Auction {
 
   _getExpiry() {
     const expiry = this._get(AUCTION_EXPIRY_KEY);
-    return tx.time +(Math.floor(expiry) * 1e9);
+    return block.time +(Math.floor(expiry) * 1e9);
   }
 
   _extendExpiry(expiry){
     return expiry + (Math.floor(this._get(AUCTION_EXPIRY_KEY)) * 1e9);
   }
 
-  _getDays(timestamp=tx.time) {
+  _getDays(timestamp=block.time) {
     return Math.floor((timestamp - Math.floor(this._getDate())) / (1e9 * 3600 * 24));
   }
 
@@ -388,8 +388,8 @@ class Auction {
     }
 
     const dailyPrice = initialPrice * (this._getDays()==0) ? 1: this._getDays();
-    const totalPrice = this._plus(this._getPrice(), pricePerMint, fixed);
-    this._setPrice(this._multi(totalPrice, dailyPrice, fixed));
+    const totalPrice = this._plus(dailyPrice, pricePerMint, fixed);
+    this._setPrice(totalPrice);
     return this._getPrice();
   }
 
@@ -468,7 +468,7 @@ class Auction {
   _isExpired(orderId) {
     const orderData = this._getOrder(orderId);
     if (orderData) {
-        if (orderData.expire !== null && (tx.time >= orderData.expire)) {
+        if (orderData.expire !== null && (block.time >= orderData.expire)) {
 	  return true;
 	}
     }
@@ -506,9 +506,8 @@ class Auction {
     this._requireOwner();
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Unsale order " +  orderId + " does not exist");
-    this._unclaim(orderData.owner);
     this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
-    this._lt(tx.time, orderData.expire, "Order " + orderId + "is in trading");
+    this._lt(block.time, orderData.expire, "Order " + orderId + "is in trading");
     this._removeUserSaleBids(orderData.owner, orderData.orderId, saleOrder);
     this._removeOrder(orderId);
     this._removeOrderList(orderData.owner);
@@ -568,7 +567,7 @@ class Auction {
       contract: contract,
       bidder : null,
       symbol : symbol,
-      orderTime : tx.time,
+      orderTime : block.time,
       expire : null
     }
     this._addUserSale(orderAccount, orderId);
@@ -613,9 +612,9 @@ class Auction {
     }
     orderData.price = minprice;
     orderData.bidder = buyer;
-    orderData.orderTime = tx.time;
+    orderData.orderTime = block.time;
     orderData.expire = (orderData.expire===null) ? this._getExpiry(): this._extendExpiry(
-      orderData.expire);
+      orderData.orderTime);
     this._setOrder(orderId, orderData);
     this._ltF(this._checkBalance(orderData), minprice,
       "Your " + orderData.symbol + " balance is not enough");
@@ -642,7 +641,7 @@ class Auction {
     const caller = tx.publisher;
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
-    this._lte(tx.time, orderData.expire, "order in auction");
+    this._lte(block.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
     if(!this._isOwnerBidder(orderId) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
@@ -697,12 +696,6 @@ class Auction {
   setDate(timestamp) {
     this._requireOwner();
     this._setDate(Math.floor(timestamp));
-    return;
-  }
-
-  setPrice(price) {
-    this._requireOwner();
-    this._setPrice(price);
     return;
   }
 
