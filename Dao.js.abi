@@ -9,6 +9,56 @@
             "description": ""
         },
         {
+            "name": "setNFT",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "setFarmDate",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "setPool",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "stake",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }],
+            "description": ""
+        },
+        {
+            "name": "unstake",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }],
+            "description": ""
+        },
+        {
+            "name": "claim",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"
