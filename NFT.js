@@ -163,6 +163,10 @@ class NFT {
     this._addToTokenList(tokenId, userTo);
   }
 
+  _mintReceipt(currentID) {
+    blockchain.receipt(JSON.stringify([currentID, blockchain.contractName()]))
+  }
+
   _generate(gene, ability, owner) {
     if(gene === undefined) {
         throw 'Invalid gene';
@@ -193,6 +197,7 @@ class NFT {
     let balance = this._get('bal.' + owner);
     this._put('bal.' + owner, balance + 1);
     this._addToTokenList(currentID, owner);
+    this._mintReceipt(currentID);
     return currentID;
   }
 
@@ -204,7 +209,7 @@ class NFT {
     }
   }
 
-  _transferToken(from, to, tokenId) {
+  _transferToken(from, to, tokenId, memo) {
     let balance_from = this._get('bal.' + from);
     this._put('bal.' + from, balance_from - 1);
 
@@ -214,9 +219,7 @@ class NFT {
     this._delete('app.' + tokenId);
     this._updateTokenList(tokenId, from, to);
     this._updateOwner(to, tokenId);
-
-    const message = "transfer " + tokenId + " to " + to + " from " + from;
-    blockchain.receipt(message);
+    this._transferReceipt(tokenId, from, to, memo)
   }
 
   _getOrderCount() {
@@ -256,6 +259,7 @@ class NFT {
       return res % mod;
     }
 
+    let memo = 'NFT initial mint.'
     for (let x = 0; x < 10; x++) {
       let genes = '';
       for (let i = 0; i < 48; i++) {
@@ -266,7 +270,17 @@ class NFT {
         (_random(30) + 1).toString() + '-' + 
         (_random(30) + 1).toString();
       this._generate(genes, attributes, this._getAuction());
+
+      blockchain.callWithAuth(
+        blockchain.contractName(), 
+        'transfer', 
+        [tokenId, blockchain.contractName(), owner, '1', memo]
+      )
     }
+  }
+
+  _transferReceipt(tokenId, from, to, memo) {
+    blockchain.receipt(JSON.stringify([tokenId, from, to, memo]));
   }
 
   transfer(tokenId, from, to, amount, memo) {
@@ -276,19 +290,19 @@ class NFT {
 
     if (blockchain.requireAuth(from, "active")) {
       this._isEqual(from, owner, "Not allowed");
-      this._transferToken(from, to, tokenId);
+      this._transferToken(from, to, tokenId, memo);
       return;
     }
 
     if (blockchain.requireAuth(blockchain.contractOwner(), "active")) {
-      this._transferToken(from, to, tokenId);
+      this._transferToken(from, to, tokenId, memo);
       return;
     }
 
     const approver = this._get('app.' + tokenId, null);
     this._isNotNull(approver, "Not allowed.");
     if (blockchain.requireAuth(approver, "active")) {
-      this._transferToken(from, to, tokenId);
+      this._transferToken(from, to, tokenId, memo);
       return;
     }
     throw "Transfer failed";
@@ -316,8 +330,6 @@ class NFT {
   }
 
   mint() { 
-    // generate new NFT
-    //let tokenList = this._mapGet('userNFT', this._getAuction(), []);
     if (this._getOrderCount() < this._getMaxOrderCOunt()) {
       // decide which 2 nfts to mix???
       let tokenID = this._generateRandomNFT();
@@ -372,11 +384,22 @@ class NFT {
       [nft1.ability, nft2.ability, fuse]
     )[0];
 
-    return this._generate(
+    let tokenId = this._generate(
       mutated_gene,
       mutated_ability,
-      owner
+      blockchain.contractName()
     );
+    let memo = 'NFT transfer for auction';
+
+    if (fuse === true) {
+      memo = 'NFT transfer on fusion'; 
+    }
+    blockchain.callWithAuth(
+        blockchain.contractName(), 
+        'transfer', 
+        [tokenId, blockchain.contractName(), owner, '1', memo]
+    )
+    return tokenId;
   }
 
   _burn(nftID) {
