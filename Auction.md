@@ -38,19 +38,13 @@
 * Bid specific order. Parameters: bid[orderId, price]
 
     ```
-    iwallet --account <user> -v call <Auction Contract>  bid '[1,"2"]' --chain_id 1020 --gas_limit 4000000 -s 18.209.137.246:30002
+    iwallet --account <user> -v call <Auction Contract>  bid '[1,"2"]' --chain_id 1020 -s 18.209.137.246:30002
     ```
 
 * Claim orderId in Auction. Parameters: claim[orderId]
 
     ```
     iwallet --account <user> -v call <Auction Contract>  claim '[1]'  -s 18.209.137.246:30002
-    ```
-
-* In case you to set the percentage fee rate. Parameters: setFeeRate["0.05"]
-
-    ```
-    iwallet --account admin -v call <Auction Contract>  setFeeRate '["0.05"]' -s 18.209.137.246:30002
     ```
 
 * In case you want to remove the specific OrderId in Auction. Parameters: claim[orderId]
@@ -65,7 +59,7 @@
     iwallet --account admin -v call <Auction Contract>  setDate '["0000000000000000000"]' -s 18.209.137.246:30002
     ```
 
-* In case you need to set the percentage price of newly mint. Parameters: setPricePerMint['0.03']
+* In case you need to set the price of newly mint. Parameters: setPricePerMint['0.01']
 
     ```
     iwallet --account admin -v call <Auction Contract>  setPricePerMint '["0.03"]' -s 18.209.137.246:30002
@@ -77,8 +71,8 @@
     iwallet --account admin -v call <Auction Contract>  setPrice '["1.00"]' -s 18.209.137.246:30002
     ```
 
-* In case you need to set the expiry. Parameters: setExpiry[20] in seconds
+* In case you need to set the expiry. Parameters: setExpiry[3600] in seconds
 
     ```
-    iwallet --account admin -v call <Auction Contract>  setExpiry '[20]' -s 18.209.137.246:30002
+    iwallet --account admin -v call <Auction Contract>  setExpiry '[3600]' -s 18.209.137.246:30002
     ```
