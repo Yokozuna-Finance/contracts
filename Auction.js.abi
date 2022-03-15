@@ -59,13 +59,6 @@
             "amountLimit": []
         },
         {
-            "name": "setPrice",
-            "args": [
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "setMaxOrder",
             "args": [
                 "number"
