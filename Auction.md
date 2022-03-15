@@ -42,7 +42,7 @@
 
 * Bid specific order. Parameters: bid '[orderId, "price"]'
 
-    > Note: orderId should be in number format while the price should be in string format. Bid is also responsible to claim its owned expired order.
+    > Note: orderId should be in number format while the price should be in string format. Bid is also responsible to claim its own expired order.
 
     ```
     iwallet --account <user> -v call <Auction Contract>  bid '[1,"2"]' --chain_id 1020 -s 18.209.137.246:30002
