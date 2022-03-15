@@ -48,30 +48,35 @@
     ```
 
 * In case you want to remove the specific OrderId in Auction. Parameters: claim[orderId]
+    > Only the Auction contract owner is allowed to remove the specific order.
 
     ```
     iwallet --account admin -v call <Auction Contract>  unsale '[1]' -s 18.209.137.246:30002
     ```
 
 * In case you want to update the Auction Date. Parameters: setDate[timestamp]
+    > Only the Auction contract owner is allowed to set the date.
 
     ```
     iwallet --account admin -v call <Auction Contract>  setDate '["0000000000000000000"]' -s 18.209.137.246:30002
     ```
 
 * In case you need to set the price of newly mint. Parameters: setPricePerMint['0.01']
+    > Only the Auction contract owner is allowed to set the price per mint.
 
     ```
     iwallet --account admin -v call <Auction Contract>  setPricePerMint '["0.03"]' -s 18.209.137.246:30002
     ```
 
 * In case you need to set the current price. Parameters: setPrice['1.00']
+    > Only the Auction contract owner is allowed to set the current price.
 
     ```
     iwallet --account admin -v call <Auction Contract>  setPrice '["1.00"]' -s 18.209.137.246:30002
     ```
 
 * In case you need to set the expiry. Parameters: setExpiry[3600] in seconds
+    > Only the Auction contract owner is allowed to set the expiry.
 
     ```
     iwallet --account admin -v call <Auction Contract>  setExpiry '[3600]' -s 18.209.137.246:30002
