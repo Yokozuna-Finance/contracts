@@ -269,7 +269,7 @@ class NFT {
       let attributes = (_random(30) + 1).toString() + '-' + 
         (_random(30) + 1).toString() + '-' + 
         (_random(30) + 1).toString();
-      this._generate(genes, attributes, this._getAuction());
+      let tokenId = this._generate(genes, attributes, this._getAuction());
 
       blockchain.callWithAuth(
         blockchain.contractName(), 
