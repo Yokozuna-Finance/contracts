@@ -274,7 +274,7 @@ class NFT {
       blockchain.callWithAuth(
         blockchain.contractName(), 
         'transfer', 
-        [tokenId, blockchain.contractName(), owner, '1', memo]
+        [tokenId, blockchain.contractName(), this._getAuction(), '1', memo]
       )
     }
   }
