@@ -272,7 +272,7 @@ class DAO {
     const stakedNFT = this._get('staked.' + tx.publisher, [])
     const nftInfo = this._getTokenDetails(tokenId);
     
-    this._removeToTokenList(tokenId);
+    this._removeToUserTokenList(tokenId);
 
     let pool = this._getPool();
     const userInfo = this._getUserInfo(tx.publisher);
@@ -304,11 +304,18 @@ class DAO {
     userInfo.rewardDebt = userRemainingAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
     this._setUserInfo(tx.publisher, userInfo);
 
-    pool.total = new BigNumber(pool.total).minus(realAmountStr).toFixed(pool.tokenPrecision, ROUND_DOWN);
+    pool.total = new BigNumber(pool.total).minus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
     this._setPoolObj(pool);
 
-    blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, realAmountStr]));
-    return realAmountStr;
+    // transfer NFT to user
+    blockchain.callWithAuth(
+      this._getNFT(),
+      'transfer', 
+      [tokenId, blockchain.contractName(), tx.publisher, "1", 'NFT withdraw']
+    )
+
+    blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, nftInfo.pushPower]));
+    return nftInfo.pushPower;
   }
 
   claim() {
@@ -321,18 +328,21 @@ class DAO {
         userInfo.rewardPending).minus(userInfo.rewardDebt);
     const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
 
-    blockchain.callWithAuth("token.iost", "transfer",
+    if (userAmount.gt(0)){
+      blockchain.callWithAuth("token.iost", "transfer",
         [TOKEN_REWARD,
          blockchain.contractName(),
          tx.publisher,
          pendingStr,
          "Claiming token rewards"]);
 
-    userInfo.rewardPending = "0";
-    userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
+      userInfo.rewardPending = "0";
+      userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
 
-    blockchain.receipt(JSON.stringify(["claim", pendingStr]));
-    this._setUserInfo(tx.publisher, userInfo);
+      blockchain.receipt(JSON.stringify(["claim", pendingStr]));
+      this._setUserInfo(tx.publisher, userInfo);    
+    }
+    
   }
 
   can_update(data) {
