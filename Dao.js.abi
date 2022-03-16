@@ -56,6 +56,12 @@
             "description": ""
         },
         {
+            "name": "updateUserInfo",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"
