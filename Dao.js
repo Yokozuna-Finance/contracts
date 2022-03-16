@@ -5,6 +5,10 @@ const TOKEN_REWARD = 'iost';
 class DAO {
 
   init() {
+    let theDate = this._getNow() + 200;
+    this.setStartDate(theDate)
+    this.setPool()
+
   }
 
   _getNow(){
@@ -102,7 +106,6 @@ class DAO {
     this._put('staked.' + tx.publisher, stakedNFT, true)
   }
 
-
   _removeToUserTokenList(tokenId) {
     const stakedNFT = this._get('staked.' + tx.publisher, [])
     const stakedIdx = stakedNFT.indexOf(tokenId)
@@ -117,16 +120,24 @@ class DAO {
     return new BigNumber(DAILY_DISTRIBUTION).times(toTime - fromTime).div(3600 * 24);
   }
 
+  _setPoolObj(pool) {
+    this._put('pool', pool)
+  }
+
+  _setUserInfo(who, info) {
+    this._mapPut("userInfo", who, info, tx.publisher);
+  }
+
   _updatePool(pool) {
     const now = this._getNow();
     let reward = this._getReward(pool.lastRewardTime, now)
     pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
     pool.lastRewardTime = now;
-    //pool.apy = this._getAPY(token, this._getPoolAllocPercentage(token))
     this._setPoolObj(pool);
+    return pool;
   }
 
-  setFarmDate(date){
+  setStartDate(date){
     this._requireOwner();
 
     const now = this._getNow().toString();
@@ -187,7 +198,9 @@ class DAO {
 
     var userAmount = new BigNumber(userInfo.amount);
 
-    this._updatePool();
+    let pool = this._getPool();
+    pool = this._updatePool(pool);
+
     if (userAmount.gt(0)) {
       userInfo[token].rewardPending = userAmount.times(pool.accPerShare).minus(
         userInfo.rewardDebt).plus(userInfo.rewardPending).toFixed(TOKEN_PRECISION, ROUND_DOWN);
@@ -205,7 +218,7 @@ class DAO {
 
     this._setUserInfo(tx.publisher, userInfo);
     pool.total = new BigNumber(pool.total).plus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
-    this._setPoolObj(type, token, pool);
+    this._setPoolObj(pool);
     blockchain.receipt(JSON.stringify(["deposit", token, amountStr]));
     // compute for the total push power
     // update total stake value 
@@ -221,7 +234,7 @@ class DAO {
     const pool = this._getPool();
     const userInfo = this._getUserInfo(tx.publisher);
 
-    this._updatePool();
+    this._updatePool(pool);
 
     const userAmount = new BigNumber(userInfo.amount);
     const amountStr = new BigNumber(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
@@ -257,7 +270,8 @@ class DAO {
 
   claim() {
     const userInfo = this._getUserInfo(tx.publisher);
-    this._updatePool();
+    let pool = this._getPool()
+    this._updatePool(pool);
 
     const userAmount = new BigNumber(userInfo.amount);
     const pending = userAmount.times(pool.accPerShare).plus(
