@@ -269,12 +269,12 @@ class NFT {
       let attributes = (_random(30) + 1).toString() + '-' + 
         (_random(30) + 1).toString() + '-' + 
         (_random(30) + 1).toString();
-      this._generate(genes, attributes, this._getAuction());
+      let tokenId = this._generate(genes, attributes, this._getAuction());
 
       blockchain.callWithAuth(
         blockchain.contractName(), 
         'transfer', 
-        [tokenId, blockchain.contractName(), owner, '1', memo]
+        [tokenId, blockchain.contractName(), this._getAuction(), '1', memo]
       )
     }
   }
