@@ -214,7 +214,7 @@ class Auction {
     this._setUserData(account, userData);
   }
 
-  _RemoveToUnclaim(orderId) {
+  _removeToUnclaim(orderId) {
     let unclaimedOrder = this._getUnclaimedOrder();
     const idx = unclaimedOrder.indexOf(orderId);
     if (idx !== -1) {
@@ -623,7 +623,7 @@ class Auction {
     this._DaoFee(contract, orderData);
     this._burn(orderData);
     this._mint(orderData.contract, orderData.owner, orderId);
-    this._RemoveToUnclaim(orderId);
+    this._removeToUnclaim(orderId);
     return;
   }
 
