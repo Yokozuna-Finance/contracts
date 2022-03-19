@@ -1,3 +1,4 @@
+const UNCLAIMED_ORDER_KEY = 'UNCLAIMED_ORDERS';
 const NFT_CONTRACT_ID = 'NFT_CONTRACT';
 const DAO_CONTRACT_ID = 'DAO_CONTRACT';
 const TOKEN_SYMBOL = 'zuna';
@@ -6,7 +7,7 @@ const ORDER_ID_KEY = 'ORDERID';
 const ORDER_COUNT_KEY = "ORDERCOUNT";
 const ORDER_BASE = 'ORDER.';
 const NFT_DATA_BASE = 'ORDER_DATA.';
-const NFT_AUCTION_KEY = "NFT_ORDERS";
+const NFT_AUCTION_KEY = "NFT_SELLERS";
 const DATE_KEY = "DATE_STARTED";
 const PRICE_KEY = "CURRENT_PRICE";
 const PRICE_PER_MINT_KEY = "PRICE_PER_MINT";
@@ -15,9 +16,6 @@ const AUCTION_EXPIRY_KEY = "EXPIRY";
 const AUCTION_FEE_RATE = "FEE_RATE";
 
 const fixed = 2;
-
-const tradeTotal = "tradeTotal_";
-const tradeUser = "tradeUser_";
 
 const saleOrder = 'order';
 const bidOrder = 'bid';
@@ -67,53 +65,23 @@ class Auction {
   }
 
   _mapGet(k, f, d, parse) {
-    return storage.mapGet(k, f);
+    const val = storage.mapGet(k, f);
+    if (val === null || val === "") {
+        return d;
+    }
+    if(parse === false){
+      return val;
+    }else{
+      return JSON.parse(val);
+    }   
   }
 
   _mapPut(k, f, v, p, stringify) {
-    storage.mapPut(k, f, v.toString());
-  }
-
-  _setPutAmount(key, symbol, amount){
-    const kn = key + symbol;
-    var v = this._get(kn);
-    if(v) {
-        amount = this._plus(v, amount, fixed);
+    if(stringify === false){
+      storage.mapPut(k, f, v, p);
+    }else{
+      storage.mapPut(k, f, JSON.stringify(v), p);
     }
-    this._put(kn, amount);
-  }
-
-  _setMPutAmount(key, symbol, amount, field){
-      const kn = key + symbol;
-      var v = this._mapGet(kn, field);
-      if(v) {
-        amount = this._plus(v, amount, fixed)
-      }
-      this._mapPut(kn, field, amount);
-  }
-
-  _rmPutAmount(key, symbol, amount){
-      const kn = key + symbol;
-      var v = this._get(kn);
-      if(v) {
-        this._ltF(v, amount, "Amount not allowed");
-        amount = this._minus(v, amount, fixed);
-        this._put(kn, amount);
-        return;
-      }
-      throw new Error("Get put key: " + kn + " is empty" );
-  }
-
-  _rmMPutAmount(key, symbol, amount, field){
-    const kn = key + symbol;
-    var v = this._mapGet(kn, field);
-    if(v) {
-      this._ltF(v, amount, "Amount is not allowed");
-      amount = this._minus(v, amount, fixed)
-      this._mapPut(kn, field, amount);
-      return;
-    }
-    throw new Error("Get mput key: " + kn + " is empty" );
   }
 
   _globalHas(contract, key){
@@ -185,15 +153,6 @@ class Auction {
     return orderId;
   }
 
-  _setOrderList(account) {
-    let order = this._get(NFT_AUCTION_KEY, {'orders': [] } , 0);
-    const orderList = NFT_DATA_BASE + account;
-    if(!order.orders.includes(orderList)) {
-      order.orders.push(orderList);
-    };
-    this._put(NFT_AUCTION_KEY, order);
-  }
-
   _addUserSale(account, orderId) {
     const userData = this._getUserData(account);
     this._equal(this._checkOrderLimit(userData), true,
@@ -218,7 +177,20 @@ class Auction {
     this._setUserData(account, userData);
   }
 
+  _addToUnclaim(orderId, account, contract) {
+    this._removeUserSaleBids(account, orderId, saleOrder);
+    let unclaimedOrder = this._getUnclaimedOrder();
+    if (unclaimedOrder.indexOf(orderId) == -1){
+      unclaimedOrder.push(orderId);
+      this._mint(contract, account, orderId);
+      this._put(UNCLAIMED_ORDER_KEY, unclaimedOrder);
+    }
+  }
+
   _removeUserSaleBids(account, orderId, condition=saleOrder){
+    if (condition==saleOrder && this._unclaimedOrderIdxExist(orderId) !== -1) {
+      return;
+    }
     const userData = this._getUserData(account);
     if(userData.orderCount > 0){
       userData.orderCount -= 1;
@@ -240,6 +212,15 @@ class Auction {
     }
 
     this._setUserData(account, userData);
+  }
+
+  _RemoveToUnclaim(orderId) {
+    let unclaimedOrder = this._getUnclaimedOrder();
+    const idx = unclaimedOrder.indexOf(orderId);
+    if (idx !== -1) {
+      unclaimedOrder.splice(idx, 1);
+      this._put(UNCLAIMED_ORDER_KEY, unclaimedOrder);
+    }
   }
 
   _symbcheck(symbol){
@@ -266,34 +247,23 @@ class Auction {
     this._subOrderCount(1);
   }
 
-  _removeOrderList(account) {
-    const userData = this._getUserData(account);
-    const order = this._get(NFT_AUCTION_KEY);
-    const orderList = NFT_DATA_BASE + account;
-    for(let i=0; i<order.orders.length; ++i){
-      if(order.orders[i] === orderList && userData.orderCount === 0){
-        order.orders.splice(i, 1);
-        break;
-      }
-    }
-    this._put(NFT_AUCTION_KEY, order);
+  _getUnclaimedOrder() {
+    return this._get(UNCLAIMED_ORDER_KEY, [], true);
   }
 
   _getUserData(account){
     let userData = this._get(NFT_DATA_BASE + account, null, true);
-    if(userData){
-      return userData;
-    }else{
+    if(userData === null){
       userData = {
-          totalBuy: 0,
-          totalSell: 0,
-          orderCount: 0,
-          orders: [],
-          bidCount: 0,
-          bids: []
+        totalBuy: 0,
+        totalSell: 0,
+        orderCount: 0,
+        orders: [],
+        bidCount: 0,
+        bids: []
       }
-      return userData;
     }
+    return userData;
   }
 
   _setTotalSell(account) {
@@ -465,38 +435,40 @@ class Auction {
     if (this._f(val1).gte(val2)) throw err;
   }
 
-  _isExpired(orderId) {
-    const orderData = this._getOrder(orderId);
-    if (orderData) {
-        if (orderData.expire !== null && (block.time >= orderData.expire)) {
-	  return true;
-	}
+  _unclaimedOrderIdxExist(orderId) {
+    const unclaimedOrder = this._getUnclaimedOrder();
+    return unclaimedOrder.indexOf(orderId);
+  }
+
+  _isExpired(orderData) {
+    if (orderData.expire !== null && (block.time >= orderData.expire)) {
+      return true;
     }
     return false;
   }
 
-  _mint(account) {
+  _mint(contract, account, orderId) {
     const userData = this._getUserData(account);
     const request = this._getRequest();
-    if(this._checkOrderLimit(userData) == false && request.caller.is_account){
-      const tokenId = blockchain.call(this._getNFT(),"mint",[])[0];
+    if(this._checkOrderLimit(userData) == false && request.caller.is_account
+        && this._unclaimedOrderIdxExist(orderId) == -1){
+      const tokenId = blockchain.call(contract, "mint", [])[0];
       if (tokenId) this.sale(tokenId);
     }
   }
 
-  _isOwnerBidder(orderId) {
-    const orderData = this._getOrder(orderId);
+  _isOwnerBidder(orderData) {
     const caller = tx.publisher;
     return (caller == orderData.creator || caller == orderData.bidder);
   }
 
   _unclaim(account) {
     const userData = this._getUserData(account);
-    const orders = userData.orders;
-    orders.forEach(
+    userData.orders.forEach(
       (orderId)=> {
-        if (this._isExpired(orderId) === true && this._isOwnerBidder(orderId) === true) {
-          this._claim(orderId, true);
+        var orderData = this._getOrder(orderId);
+        if (this._isExpired(orderData) === true) {
+           this._addToUnclaim(orderId, orderData.owner, orderData.contract);
 	}
       }
     );
@@ -510,7 +482,6 @@ class Auction {
     this._lt(block.time, orderData.expire, "Order " + orderId + "is in trading");
     this._removeUserSaleBids(orderData.owner, orderData.orderId, saleOrder);
     this._removeOrder(orderId);
-    this._removeOrderList(orderData.owner);
     return;
   }
 
@@ -572,7 +543,6 @@ class Auction {
     }
     this._addUserSale(orderAccount, orderId);
     this._setOrder(orderId, orderData);
-    this._setOrderList(orderAccount);
     return;
   }
 
@@ -582,7 +552,6 @@ class Auction {
   }
 
   unsale(orderId) {
-    this._getNFT();
     return this._unsale(orderId);
   }
 
@@ -593,10 +562,8 @@ class Auction {
 
   bid(orderId, price) {
     const buyer = tx.publisher;
-    const contract = this._getNFT();
     const orderData = this._getOrder(orderId);
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
-    this._notEqual(orderData.contract, contract, "contract mismatch");
     this._equal(orderData.bidder, buyer, "current bidder is you");
     this._equal(orderData.creator, buyer, "cannot bid yourself asset");
     this._equal(true, this._isExpired(orderId), "Order is expired");
@@ -621,7 +588,6 @@ class Auction {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), minprice, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);
-    this._unclaim(orderData.owner);
     return;
   }
 
@@ -643,7 +609,7 @@ class Auction {
     this._notData(orderData, "Claim order "+ orderId  + " does not exist");
     this._lte(block.time, orderData.expire, "order in auction");
     this._isNull(orderData.bidder, "order no bidder");
-    if(!this._isOwnerBidder(orderId) && triggered==false) throw "Authorization failed.";
+    if(!this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
@@ -651,18 +617,13 @@ class Auction {
 
     this._setTotalSell(orderData.owner);
     this._setTotalBuy(orderData.bidder);
-    
-    this._setPutAmount(tradeTotal, orderData.symbol, orderData.price);
-    this._setMPutAmount(tradeUser, orderData.symbol, orderData.price, orderData.bidder);
-    this._setMPutAmount(tradeUser, orderData.symbol, orderData.price, orderData.owner);
-
     this._removeUserSaleBids(orderData.owner, orderId, saleOrder);
     this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
     this._removeOrder(orderId);
-    this._removeOrderList(orderData.owner);
     this._DaoFee(contract, orderData);
     this._burn(orderData);
-    this._mint(orderData.owner);
+    this._mint(orderData.contract, orderData.owner, orderId);
+    this._RemoveToUnclaim(orderId);
     return;
   }
 
@@ -715,6 +676,11 @@ class Auction {
     this._requireOwner();
     this._setExpiry(expiry);
     return;
+  }
+
+  unclaimedOrders() {
+    this._requireOwner();
+    this._unclaim(blockchain.contractName());
   }
 
   can_update(data) {
