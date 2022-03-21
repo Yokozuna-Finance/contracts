@@ -17,7 +17,7 @@ Responsible for the genetic and attributes algorithm of the NFTs. We use a Base3
 
 # Sumo genome
 
-An NFT gnome has 48 genes, and every 4bit chunk is a trait(hair type, hair style, eyes, mouth, mawashi), known as the dominant (d), 1st recessive (r1), 2nd recessive (r2), and 3rd recessive (r3) gene, resulting in 12 trait groups of 4 genes, 
+An NFT gnome has 48 genes, and every 4bit chunk is a trait(hair style, body type, eyes, mouth, mawashi), known as the dominant (d), 1st recessive (r1), 2nd recessive (r2), and 3rd recessive (r3) gene, resulting in 12 trait groups of 4 genes, 
 
 ```44h9 8oe2 5543 v741 7d12 1de6 aa82 7832 1i56 434p 7234 5266```
 
@@ -69,4 +69,4 @@ Let say we map these traits as hair(0-3), body type(4-7), eyes(8-11), mouth(12-1
 | 9 |    3 | hair 9   | N      | hidden  |
 
 
-> Note: Only visible/dominant traits are the ones that we render in the frontend, but the hidden/recessive traits also contribute for the overall push power and fusion computations.
+> Note: Only visible/dominant traits are the ones we render in the frontend, but the hidden/recessive traits also contribute for the overall push power and fusion computations. for the above example the sumo's visible traits are 4 for hair, 8 for body type, 5 for eyes, v for mouth and 7 for mawashi
