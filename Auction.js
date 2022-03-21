@@ -177,18 +177,16 @@ class Auction {
     this._setUserData(account, userData);
   }
 
-  _addToUnclaim(orderId, account, contract) {
-    this._removeUserSaleBids(account, orderId, saleOrder);
-    let unclaimedOrder = this._getUnclaimedOrder();
-    if (unclaimedOrder.indexOf(orderId) == -1){
-      unclaimedOrder.push(orderId);
-      this._mint(contract, account, orderId);
-      this._put(UNCLAIMED_ORDER_KEY, unclaimedOrder);
-    }
+  _addToApprove(orderData, to) {
+    const approvedToken = this._approvedToken(orderData.tokenId, orderData.contract);
+    this._mint(orderData.contract, orderData.owner, orderData.orderId, approvedToken);
+    const args = [to, orderData.tokenId];
+    blockchain.call(orderData.contract, 'approve', JSON.stringify(args));
+    this._removeUserSaleBids(orderData, orderData.owner, saleOrder);
   }
 
-  _removeUserSaleBids(account, orderId, condition=saleOrder){
-    if (condition==saleOrder && this._unclaimedOrderIdxExist(orderId) !== -1) {
+  _removeUserSaleBids(orderData, account, condition=saleOrder){
+    if (condition==saleOrder && this._approvedToken(orderData.tokenId, orderData.contract)) {
       return;
     }
     const userData = this._getUserData(account);
@@ -200,7 +198,7 @@ class Auction {
 
     let found = false;
     for(let i=0; i<orderBidLength; ++i){
-      if(ordersBids[i] === orderId){
+      if(ordersBids[i] === orderData.orderId){
          ordersBids.splice(i, 1);
          found = true;
          break;
@@ -208,19 +206,10 @@ class Auction {
     }
 
     if(!found){
-      throw "Order id: " + orderId + " is not found.";
+      throw "Order id: " + orderData.orderId + " is not found.";
     }
 
     this._setUserData(account, userData);
-  }
-
-  _removeToUnclaim(orderId) {
-    let unclaimedOrder = this._getUnclaimedOrder();
-    const idx = unclaimedOrder.indexOf(orderId);
-    if (idx !== -1) {
-      unclaimedOrder.splice(idx, 1);
-      this._put(UNCLAIMED_ORDER_KEY, unclaimedOrder);
-    }
   }
 
   _symbcheck(symbol){
@@ -245,10 +234,6 @@ class Auction {
   _removeOrder(orderId){
     this._remove(ORDER_BASE + orderId);
     this._subOrderCount(1);
-  }
-
-  _getUnclaimedOrder() {
-    return this._get(UNCLAIMED_ORDER_KEY, [], true);
   }
 
   _getUserData(account){
@@ -435,9 +420,8 @@ class Auction {
     if (this._f(val1).gte(val2)) throw err;
   }
 
-  _unclaimedOrderIdxExist(orderId) {
-    const unclaimedOrder = this._getUnclaimedOrder();
-    return unclaimedOrder.indexOf(orderId);
+  _approvedToken(tokenId, contract) {
+    return (this._getGlobal(contract, tokenId, null, true) !== null);
   }
 
   _isExpired(orderData) {
@@ -447,11 +431,11 @@ class Auction {
     return false;
   }
 
-  _mint(contract, account, orderId) {
+  _mint(contract, account, orderId, approvedToken) {
     const userData = this._getUserData(account);
     const request = this._getRequest();
     if(this._checkOrderLimit(userData) == false && request.caller.is_account
-        && this._unclaimedOrderIdxExist(orderId) == -1){
+        && approvedToken == false){
       const tokenId = blockchain.call(contract, "mint", [])[0];
       if (tokenId) this.sale(tokenId);
     }
@@ -468,7 +452,7 @@ class Auction {
       (orderId)=> {
         var orderData = this._getOrder(orderId);
         if (this._isExpired(orderData) === true) {
-           this._addToUnclaim(orderId, orderData.owner, orderData.contract);
+          this._addToApprove(orderData, orderData.bidder);
 	}
       }
     );
@@ -480,7 +464,8 @@ class Auction {
     this._notData(orderData, "Unsale order " +  orderId + " does not exist");
     this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
     this._lt(block.time, orderData.expire, "Order " + orderId + "is in trading");
-    this._removeUserSaleBids(orderData.owner, orderData.orderId, saleOrder);
+    this._removeUserSaleBids(orderData.owner, orderData.orderId, orderData.contract,
+      orderData.tokenId, saleOrder);
     this._removeOrder(orderId);
     return;
   }
@@ -575,7 +560,7 @@ class Auction {
     if(null !== orderData.bidder){
       this._safeTransfer(blockchain.contractName(), orderData.bidder, this._f(orderData.price),
         orderData.symbol, buyer + " is the new bidder for order " + orderId);
-      this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
+      this._removeUserSaleBids(orderData, orderData.owner, bidOrder);
     }
     orderData.price = minprice;
     orderData.bidder = buyer;
@@ -588,6 +573,7 @@ class Auction {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), minprice, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);
+    this._unclaim(orderData.owner);
     return;
   }
 
@@ -611,19 +597,19 @@ class Auction {
     this._isNull(orderData.bidder, "order no bidder");
     if(!this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
+    const approvedToken = this._approvedToken(orderData.tokenId, orderData.contract);
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
     blockchain.callWithAuth(orderData.contract, 'transfer', JSON.stringify(args));
 
     this._setTotalSell(orderData.owner);
     this._setTotalBuy(orderData.bidder);
-    this._removeUserSaleBids(orderData.owner, orderId, saleOrder);
-    this._removeUserSaleBids(orderData.bidder, orderId, bidOrder);
+    this._removeUserSaleBids(orderData, orderData.owner, saleOrder, approvedToken);
+    this._removeUserSaleBids(orderData, orderData.bidder, bidOrder);
     this._removeOrder(orderId);
     this._DaoFee(contract, orderData);
     this._burn(orderData);
-    this._mint(orderData.contract, orderData.owner, orderId);
-    this._removeToUnclaim(orderId);
+    this._mint(orderData.contract, orderData.owner, orderId, approvedToken);
     return;
   }
 
@@ -676,11 +662,6 @@ class Auction {
     this._requireOwner();
     this._setExpiry(expiry);
     return;
-  }
-
-  unclaimedOrders() {
-    this._requireOwner();
-    this._unclaim(blockchain.contractName());
   }
 
   can_update(data) {
