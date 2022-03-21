@@ -179,9 +179,9 @@ class Auction {
 
   _approveOrder(orderData, to) {
     const approvedToken = this._approvedToken(orderData.tokenId, orderData.contract);
-    this._mint(orderData.contract, orderData.owner, orderData.orderId, unclaimedOrder);
+    this._mint(orderData.contract, orderData.owner, orderData.orderId, approvedToken);
     const args = [to, orderData.tokenId];
-    blockchain.call(orderData.contract, 'approve', JSON.stringify(args));
+    blockchain.callWithAuth(orderData.contract, 'approve', JSON.stringify(args));
     this._removeUserSaleBids(orderData, orderData.owner, saleOrder, approvedToken);
   }
 
@@ -431,11 +431,11 @@ class Auction {
     return false;
   }
 
-  _mint(contract, account, orderId, unclaimedOrder) {
+  _mint(contract, account, orderId, approvedOrder) {
     const userData = this._getUserData(account);
     const request = this._getRequest();
     if(this._checkOrderLimit(userData) == false && request.caller.is_account
-        && unclaimedOrder == false){
+        && approvedOrder == false){
       const tokenId = blockchain.call(contract, "mint", [])[0];
       if (tokenId) this.sale(tokenId);
     }
@@ -447,7 +447,6 @@ class Auction {
   }
 
   _unclaim(account, contractOwner=false) {
-    this._requireAuth(tx.publisher);
     const userData = this._getUserData(account);
     const orders = (contractOwner == true) ? userData.orders: userData.bids;
     orders.forEach(
