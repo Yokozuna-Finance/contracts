@@ -1,4 +1,4 @@
-const UNCLAIMED_ORDER_KEY = 'UNCLAIMED_ORDERS';
+const UNCLAIMED_ORDER_KEY = 'UNCLAIMED_ORDER.';
 const NFT_CONTRACT_ID = 'NFT_CONTRACT';
 const DAO_CONTRACT_ID = 'DAO_CONTRACT';
 const TOKEN_SYMBOL = 'zuna';
@@ -177,16 +177,16 @@ class Auction {
     this._setUserData(account, userData);
   }
 
-  _addToApprove(orderData, to) {
+  _approveOrder(orderData, to) {
     const approvedToken = this._approvedToken(orderData.tokenId, orderData.contract);
-    this._mint(orderData.contract, orderData.owner, orderData.orderId, approvedToken);
+    this._mint(orderData.contract, orderData.owner, orderData.orderId, unclaimedOrder);
     const args = [to, orderData.tokenId];
     blockchain.call(orderData.contract, 'approve', JSON.stringify(args));
-    this._removeUserSaleBids(orderData, orderData.owner, saleOrder);
+    this._removeUserSaleBids(orderData, orderData.owner, saleOrder, approvedToken);
   }
 
-  _removeUserSaleBids(orderData, account, condition=saleOrder){
-    if (condition==saleOrder && this._approvedToken(orderData.tokenId, orderData.contract)) {
+  _removeUserSaleBids(orderData, account, condition=saleOrder, approvedToken=false){
+    if (condition==saleOrder && approvedToken) {
       return;
     }
     const userData = this._getUserData(account);
@@ -421,7 +421,7 @@ class Auction {
   }
 
   _approvedToken(tokenId, contract) {
-    return (this._getGlobal(contract, tokenId, null, true) !== null);
+    return (this._getGlobal(contract, 'app.' + tokenId, null, true) !== null);
   }
 
   _isExpired(orderData) {
@@ -431,11 +431,11 @@ class Auction {
     return false;
   }
 
-  _mint(contract, account, orderId, approvedToken) {
+  _mint(contract, account, orderId, unclaimedOrder) {
     const userData = this._getUserData(account);
     const request = this._getRequest();
     if(this._checkOrderLimit(userData) == false && request.caller.is_account
-        && approvedToken == false){
+        && unclaimedOrder == false){
       const tokenId = blockchain.call(contract, "mint", [])[0];
       if (tokenId) this.sale(tokenId);
     }
@@ -446,13 +446,15 @@ class Auction {
     return (caller == orderData.creator || caller == orderData.bidder);
   }
 
-  _unclaim(account) {
+  _unclaim(account, contractOwner=false) {
+    this._requireAuth(tx.publisher);
     const userData = this._getUserData(account);
-    userData.orders.forEach(
+    const orders = (contractOwner == true) ? userData.orders: userData.bids;
+    orders.forEach(
       (orderId)=> {
         var orderData = this._getOrder(orderId);
         if (this._isExpired(orderData) === true) {
-          this._addToApprove(orderData, orderData.bidder);
+          this._approveOrder(orderData, orderData.bidder);
 	}
       }
     );
@@ -573,7 +575,7 @@ class Auction {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), minprice, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);
-    this._unclaim(orderData.owner);
+    this._unclaim(orderData.bidder);
     return;
   }
 
