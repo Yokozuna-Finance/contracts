@@ -470,28 +470,22 @@ class Auction {
     return;
   }
 
-  _orderExist(orderId) {
-    const _getOrders = (account) => {
-      const auctions = this._get(account);
-      auctions.orders.forEach((id) => {
-       var orderData = this._getOrder(id);
-        this._equal(orderData.tokenId, orderId, "Token already in Auction.");
-      });
-      return;
-    }
-    const jsonData = this._get(NFT_AUCTION_KEY, 0);
-    if(jsonData) {
-      jsonData.orders.forEach((account) => {
-        _getOrders(account);
-      });
-    }
+  _orderExist(tokenId, account, contract) {
+    const approvedToken = this._approvedToken(tokenId, contract);
+    this._equal(approvedToken, true, "Already in Auction.");
+    const userData = this._getUserData(account);
+    userData.orders.forEach(
+      (orderId)=> {
+      var orderData = this._getOrder(orderId);
+      this._equal(orderData.tokenId, tokenId, "Already in Auction.");
+    });
   }
 
   _isInAuction(contract, tokenId) {
     const tokenOwner = this._getGlobal(contract, 'zun.'+ tokenId, 0, true);
     this._equal(tokenOwner, 0, "token not found");
     if (tokenOwner == blockchain.contractName()) {
-      this._orderExist(tokenId);
+      this._orderExist(tokenId, tokenOwner, contract);
       return;
     }
     throw "Put this token into an auction is prohibited.";
