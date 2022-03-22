@@ -530,7 +530,7 @@ class Auction {
     if(null !== orderData.bidder){
       this._safeTransfer(blockchain.contractName(), orderData.bidder, this._f(orderData.price),
         orderData.symbol, buyer + " is the new bidder for order " + orderId);
-      this._removeUserSaleBids(orderData, orderData.owner, bidOrder);
+      this._removeUserSaleBids(orderData, orderData.bidder, bidOrder);
     }
     orderData.price = minprice;
     orderData.bidder = buyer;
