@@ -13,13 +13,6 @@
             }]
         },
         {
-            "name": "unsale",
-            "args": [
-                "number"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "bid",
             "args": [
                 "number",

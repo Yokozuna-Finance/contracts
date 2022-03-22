@@ -11,7 +11,6 @@ const PRICE_KEY = "CURRENT_PRICE";
 const PRICE_PER_MINT_KEY = "PRICE_PER_MINT";
 const INITIAL_PRICE_KEY = "INITIAL_PRICE";
 const AUCTION_EXPIRY_KEY = "EXPIRY";
-const AUCTION_FEE_RATE = "FEE_RATE";
 
 const fixed = 2;
 
@@ -137,6 +136,10 @@ class Auction {
     return JSON.parse(blockchain.contextInfo());
   }
 
+  _getApprovedToken(tokenId, contract) {
+    return this._getGlobal(contract, 'app.' + tokenId, null, true);
+  }
+
   _addOrderCount(count){
     this._put(ORDER_COUNT_KEY, this._getOrderCount() + count);
     this._addOrderId(1);
@@ -176,9 +179,12 @@ class Auction {
   }
 
   _approveOrder(orderData, to) {
-    const approvedToken = this._approvedToken(orderData.tokenId, orderData.contract);
-    this._mint(orderData.contract, orderData.owner, orderData.orderId, approvedToken);
-    const args = [to, orderData.tokenId];
+    let approvedToken = this._getApprovedToken(orderData.tokenId, orderData.contract);
+    approvedToken = (approvedToken !== null);
+    if (to == orderData.bidder) {
+      this._mint(orderData.contract, orderData.owner, orderData.orderId, approvedToken);
+    }
+    const args  = [to, orderData.tokenId];
     blockchain.callWithAuth(orderData.contract, 'approve', JSON.stringify(args));
     this._removeUserSaleBids(orderData, orderData.owner, saleOrder, approvedToken);
   }
@@ -191,22 +197,12 @@ class Auction {
     if(userData.orderCount > 0){
       userData.orderCount -= 1;
     }
-    const orderBidLength = (condition==saleOrder) ? userData.orders.length: userData.bids.length;
     let ordersBids = (condition==saleOrder) ? userData.orders : userData.bids;
-
-    let found = false;
-    for(let i=0; i<orderBidLength; ++i){
-      if(ordersBids[i] === orderData.orderId){
-         ordersBids.splice(i, 1);
-         found = true;
-         break;
-      }
-    }
-
-    if(!found){
+    const idx = ordersBids.indexOf(orderData.orderId);
+    if (idx == -1) { 
       throw "Order id: " + orderData.orderId + " is not found.";
     }
-
+    ordersBids.splice(idx, 1);
     this._setUserData(account, userData);
   }
 
@@ -418,10 +414,6 @@ class Auction {
     if (this._f(val1).gte(val2)) throw err;
   }
 
-  _approvedToken(tokenId, contract) {
-    return (this._getGlobal(contract, 'app.' + tokenId, null, true) !== null);
-  }
-
   _isExpired(orderData) {
     if (orderData.expire !== null && (block.time >= orderData.expire)) {
       return true;
@@ -429,11 +421,11 @@ class Auction {
     return false;
   }
 
-  _mint(contract, account, orderId, approvedOrder) {
+  _mint(contract, account, orderId, approvedToken) {
     const userData = this._getUserData(account);
     const request = this._getRequest();
     if(this._checkOrderLimit(userData) == false && request.caller.is_account
-        && approvedOrder == false){
+        && approvedToken == false){
       const tokenId = blockchain.call(contract, "mint", [])[0];
       if (tokenId) this.sale(tokenId);
     }
@@ -445,32 +437,21 @@ class Auction {
   }
 
   _unclaim(account, contractOwner=false) {
+    const caller = tx.publisher;
     const userData = this._getUserData(account);
     const orders = (contractOwner == true) ? userData.orders: userData.bids;
     orders.forEach(
       (orderId)=> {
         var orderData = this._getOrder(orderId);
         if (this._isExpired(orderData) === true) {
-          this._approveOrder(orderData, orderData.bidder);
+          this._approveOrder(orderData, caller);
 	}
       }
     );
   }
 
-  _unsale(orderId){
-    this._requireOwner();
-    const orderData = this._getOrder(orderId);
-    this._notData(orderData, "Unsale order " +  orderId + " does not exist");
-    this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
-    this._lt(block.time, orderData.expire, "Order " + orderId + "is in trading");
-    this._removeUserSaleBids(orderData.owner, orderData.orderId, orderData.contract,
-      orderData.tokenId, saleOrder);
-    this._removeOrder(orderId);
-    return;
-  }
-
   _orderExist(tokenId, account, contract) {
-    const approvedToken = this._approvedToken(tokenId, contract);
+    const approvedToken = (this._getApprovedToken(tokenId, contract) !== null);
     this._equal(approvedToken, true, "Already in Auction.");
     const userData = this._getUserData(account);
     userData.orders.forEach(
@@ -529,10 +510,6 @@ class Auction {
     return this._sale(tokenId, true);
   }
 
-  unsale(orderId) {
-    return this._unsale(orderId);
-  }
-
   _checkBalance(orderData) {
     return this._f(blockchain.call("token.iost", "balanceOf", [
       orderData.symbol, orderData.bidder])[0]);
@@ -566,7 +543,7 @@ class Auction {
     const memo = 'AUCBUY-'+ orderData.contract + "-" +  orderData.tokenId;
     this._safeTransfer(buyer, blockchain.contractName(), minprice, orderData.symbol, memo);
     this._addUserBid(buyer, orderId);
-    this._unclaim(orderData.bidder);
+    this._unclaim(orderData.owner, true);
     return;
   }
 
@@ -590,7 +567,9 @@ class Auction {
     this._isNull(orderData.bidder, "order no bidder");
     if(!this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
-    const approvedToken = this._approvedToken(orderData.tokenId, orderData.contract);
+    const tokenApprovedBy = this._getApprovedToken(orderData.tokenId, orderData.contract);
+    const approvedToken = (tokenApprovedBy !== null);
+    const approvedByBidder = (approvedToken && tokenApprovedBy == orderData.bidder);
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
     blockchain.callWithAuth(orderData.contract, 'transfer', JSON.stringify(args));
@@ -602,7 +581,7 @@ class Auction {
     this._removeOrder(orderId);
     this._DaoFee(contract, orderData);
     this._burn(orderData);
-    this._mint(orderData.contract, orderData.owner, orderId, approvedToken);
+    this._mint(orderData.contract, orderData.owner, orderId, approvedByBidder);
     return;
   }
 
