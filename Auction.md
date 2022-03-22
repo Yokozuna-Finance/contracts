@@ -56,13 +56,6 @@
     iwallet --account <user> -v call <Auction Contract>  claim '[1]'  -s 18.209.137.246:30002
     ```
 
-* In case you want to remove the specific OrderId in Auction. Parameters: unsale '[orderId]'
-    > Note: Only the Auction contract owner is allowed to remove the specific order.
-
-    ```
-    iwallet --account admin -v call <Auction Contract>  unsale '[1]' -s 18.209.137.246:30002
-    ```
-
 * Set the auction date. Parameters: setDate[timestamp]
     > Note: Only the Auction contract owner is allowed to set the date.
 

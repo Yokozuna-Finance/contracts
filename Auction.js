@@ -450,18 +450,6 @@ class Auction {
     );
   }
 
-  _unsale(orderId){
-    this._requireOwner();
-    const orderData = this._getOrder(orderId);
-    this._notData(orderData, "Unsale order " +  orderId + " does not exist");
-    this._notEqual(null, orderData.bidder, "Order "+ orderId + " had bidder, can't retract ");
-    this._lt(block.time, orderData.expire, "Order " + orderId + "is in trading");
-    this._removeUserSaleBids(orderData.owner, orderData.orderId, orderData.contract,
-      orderData.tokenId, saleOrder);
-    this._removeOrder(orderId);
-    return;
-  }
-
   _orderExist(tokenId, account, contract) {
     const approvedToken = (this._getApprovedToken(tokenId, contract) !== null);
     this._equal(approvedToken, true, "Already in Auction.");
@@ -520,10 +508,6 @@ class Auction {
   sale(tokenId) {
     this._requireAuth(tx.publisher);
     return this._sale(tokenId, true);
-  }
-
-  unsale(orderId) {
-    return this._unsale(orderId);
   }
 
   _checkBalance(orderData) {
