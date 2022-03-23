@@ -521,7 +521,7 @@ class Auction {
     this._notData(orderData, "Bid order " +  orderId + " does not exist");
     this._equal(orderData.bidder, buyer, "current bidder is you");
     this._equal(orderData.creator, buyer, "cannot bid yourself asset");
-    this._equal(true, this._isExpired(orderId), "Order is expired");
+    this._equal(true, this._isExpired(orderData), "Order is expired");
     const minprice = this._f(price).toFixed(fixed);
     this._lteF(minprice, orderData.price, "bid price should be higher");
     this._lteF(orderData.price, "0", "Price check error");
