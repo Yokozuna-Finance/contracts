@@ -330,11 +330,12 @@ class NFT {
   }
 
   mint() {
-    this._callExternalABI(this._getAuction(), "unclaimedOrders");
+    const auctionContract = this._getAuction();
+    this._callExternalABI(auctionContract, "unclaimedOrders");
     if (this._getOrderCount() < this._getMaxOrderCOunt()) {
       // decide which 2 nfts to mix???
       let tokenID = this._generateRandomNFT();
-      this._callExternalABI(this._getAuction(), "sale", [tokenID]);
+      this._callExternalABI(auctionContract, "sale", [tokenID]);
       return tokenID;
     }
   }
