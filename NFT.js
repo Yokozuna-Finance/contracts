@@ -329,23 +329,20 @@ class NFT {
     return this._get('zun.' + tokenId);
   }
 
-  mint() { 
+  mint() {
+    this._callExternalABI(this._getAuction(), "unclaimedOrders");
     if (this._getOrderCount() < this._getMaxOrderCOunt()) {
       // decide which 2 nfts to mix???
       let tokenID = this._generateRandomNFT();
-      return this._moveToAuction(tokenID);
+      this._callExternalABI(this._getAuction(), "sale", [tokenID]);
+      return tokenID;
     }
   }
 
-  _moveToAuction(tokenID) {
+  _callExternalABI(contract, func, args=[]) {
     if (this._getRequest().caller.is_account) {
-      blockchain.call(
-        this._getAuction(),
-        "sale",
-        [tokenID]
-      )[0];
+      blockchain.call(contract, func, args)[0];
     }
-    return tokenID;
   }
 
   _generateRandomNFT(){
