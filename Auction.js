@@ -6,11 +6,13 @@ const ORDER_ID_KEY = 'ORDERID';
 const ORDER_COUNT_KEY = "ORDERCOUNT";
 const ORDER_BASE = 'ORDER.';
 const NFT_DATA_BASE = 'ORDER_DATA.';
-const DATE_KEY = "DATE_STARTED";
-const PRICE_KEY = "CURRENT_PRICE";
-const PRICE_PER_MINT_KEY = "PRICE_PER_MINT";
-const INITIAL_PRICE_KEY = "INITIAL_PRICE";
-const AUCTION_EXPIRY_KEY = "EXPIRY";
+const DATE_KEY = 'DATE_STARTED';
+const PRICE_KEY = 'CURRENT_PRICE';
+const PRICE_PER_MINT_KEY = 'PRICE_PER_MINT';
+const INITIAL_PRICE_KEY = 'INITIAL_PRICE';
+const AUCTION_EXPIRY_KEY = 'EXPIRY';
+const UNCLAIMED_BASE = 'UNCLAIMED.';
+const MINTED_BASE = 'MINTED.';
 
 const fixed = 2;
 
@@ -136,8 +138,12 @@ class Auction {
     return JSON.parse(blockchain.contextInfo());
   }
 
-  _getApprovedToken(tokenId, contract) {
-    return this._getGlobal(contract, 'app.' + tokenId, null, true);
+  _unclaimedToken(tokenId) {
+    return (this._get(UNCLAIMED_BASE + tokenId, null, true) != null);
+  }
+
+  _mintedAccount(account) {
+    return (this._get(MINTED_BASE + account, null, true) != null);
   }
 
   _addOrderCount(count){
@@ -178,19 +184,19 @@ class Auction {
     this._setUserData(account, userData);
   }
 
-  _approveOrder(orderData, to) {
-    let approvedToken = this._getApprovedToken(orderData.tokenId, orderData.contract);
-    approvedToken = (approvedToken !== null);
-    if (to == orderData.bidder) {
-      this._mint(orderData.contract, orderData.owner, orderData.orderId, approvedToken);
+  _unclaimOrder(orderData, to, mint) {
+    const unclaimedToken = this._unclaimedToken(orderData.tokenId);
+    const mintedAccount = this._mintedAccount(to);
+    this._put(UNCLAIMED_BASE + orderData.tokenId, to);
+    if (!mintedAccount && mint) {
+      this._mint(orderData.contract, orderData.owner);
+      this._put(MINTED_BASE + to, orderData.tokenId);
     }
-    const args  = [to, orderData.tokenId];
-    blockchain.callWithAuth(orderData.contract, 'approve', JSON.stringify(args));
-    this._removeUserSaleBids(orderData, orderData.owner, saleOrder, approvedToken);
+    this._removeUserSaleBids(orderData, orderData.owner, saleOrder, unclaimedToken);
   }
 
-  _removeUserSaleBids(orderData, account, condition=saleOrder, approvedToken=false){
-    if (condition==saleOrder && approvedToken) {
+  _removeUserSaleBids(orderData, account, condition=saleOrder, unclaimedToken=false){
+    if (condition==saleOrder && unclaimedToken) {
       return;
     }
     const userData = this._getUserData(account);
@@ -228,6 +234,10 @@ class Auction {
   _removeOrder(orderId){
     this._remove(ORDER_BASE + orderId);
     this._subOrderCount(1);
+  }
+
+  _removeUnclaimedToken(tokenId) {
+    this._remove(UNCLAIMED_BASE + tokenId);
   }
 
   _getUserData(account){
@@ -320,7 +330,7 @@ class Auction {
   }
 
   _checkOrderLimit(userData) {
-    if(userData && userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)) return true;
+    if(userData.orderCount >= this._get(MAX_ORDER_COUNT, 0, 0)) return true;
     return false;
   }
 
@@ -421,11 +431,10 @@ class Auction {
     return false;
   }
 
-  _mint(contract, account, orderId, approvedToken) {
+  _mint(contract, account) {
     const userData = this._getUserData(account);
     const request = this._getRequest();
-    if(this._checkOrderLimit(userData) == false && request.caller.is_account
-        && approvedToken == false){
+    if(this._checkOrderLimit(userData) == false && request.caller.is_account){
       const tokenId = blockchain.call(contract, "mint", [])[0];
       if (tokenId) this.sale(tokenId);
     }
@@ -436,7 +445,7 @@ class Auction {
     return (caller == orderData.creator || caller == orderData.bidder);
   }
 
-  _unclaim(account, contractOwner=false) {
+  _unclaim(account, contractOwner=false, mint=true) {
     const caller = tx.publisher;
     const userData = this._getUserData(account);
     const orders = (contractOwner == true) ? userData.orders: userData.bids;
@@ -444,15 +453,16 @@ class Auction {
       (orderId)=> {
         var orderData = this._getOrder(orderId);
         if (this._isExpired(orderData) === true) {
-          this._approveOrder(orderData, caller);
+          this._unclaimOrder(orderData, caller, mint);
 	}
       }
     );
+    this._remove(MINTED_BASE + caller);
   }
 
-  _orderExist(tokenId, account, contract) {
-    const approvedToken = (this._getApprovedToken(tokenId, contract) !== null);
-    this._equal(approvedToken, true, "Already in Auction.");
+  _orderExist(tokenId, account) {
+    const unclaimedToken = this._unclaimedToken(tokenId);
+    this._equal(unclaimedToken, true, "Already in Auction.");
     const userData = this._getUserData(account);
     userData.orders.forEach(
       (orderId)=> {
@@ -461,36 +471,34 @@ class Auction {
     });
   }
 
-  _isInAuction(contract, tokenId) {
+  _isInAuction(contract, tokenId, contractOwner) {
     const tokenOwner = this._getGlobal(contract, 'zun.'+ tokenId, 0, true);
     this._equal(tokenOwner, 0, "token not found");
-    if (tokenOwner == blockchain.contractName()) {
-      this._orderExist(tokenId, tokenOwner, contract);
+    if (tokenOwner == contractOwner) {
+      this._orderExist(tokenId, tokenOwner);
       return;
     }
     throw "Put this token into an auction is prohibited.";
 
   }
 
-  _sale(tokenId, publisher=false){
-    const contract = this._getNFT();
-    const contractOwner = blockchain.contractOwner();
-    this._isInAuction(contract, tokenId);
+  _sale(tokenId, contract, owner, creator){
     const price = this._f(this._checkPrice()).toFixed(fixed);
     const symbol = TOKEN_SYMBOL;
-    const creator = (publisher) ? blockchain.contractOwner() : tx.publisher;
-    const orderAccount = (publisher) ? blockchain.contractName() : tx.publisher;
     const contractInfo = this._getNFTInfo(contract, tokenId);
-    this._lteF(price, "0", "sale price must > 1 " +  symbol);
     const orderId = this._getOrderId();
-    const userData = this._getUserData(orderAccount);
     this._addOrderCount(1);
-
     const orderData = {
       orderId: orderId,
       actionCode: "SALE",
       creator: creator,
-      owner: orderAccount,
+      owner: owner,
+      nft: {
+        tokenId: contractInfo.id,
+	pushPower: contractInfo.pushPower,
+	ability: contractInfo.ability,
+	contract: contract
+      },
       tokenId: contractInfo.id,
       aucPrice: price,
       price: price,
@@ -500,14 +508,20 @@ class Auction {
       orderTime : block.time,
       expire : null
     }
-    this._addUserSale(orderAccount, orderId);
-    this._setOrder(orderId, orderData);
-    return;
+    this._addUserSale(orderData.owner, orderData.orderId);
+    this._setOrder(orderData.orderId, orderData);
+    return orderData;
   }
 
   sale(tokenId) {
-    this._requireAuth(tx.publisher);
-    return this._sale(tokenId, true);
+    const caller = tx.publisher;
+    this._requireAuth(caller);
+    const contract = this._getNFT();
+    const contractName = blockchain.contractName();
+    this._unclaim(contractName, true, false);
+    this._isInAuction(contract, tokenId, contractName);
+    this._sale(tokenId, contract, contractName, blockchain.contractOwner());
+    return;
   }
 
   _checkBalance(orderData) {
@@ -567,21 +581,20 @@ class Auction {
     this._isNull(orderData.bidder, "order no bidder");
     if(!this._isOwnerBidder(orderData) && triggered==false) throw "Authorization failed.";
     const contract = this._getDao();
-    const tokenApprovedBy = this._getApprovedToken(orderData.tokenId, orderData.contract);
-    const approvedToken = (tokenApprovedBy !== null);
-    const approvedByBidder = (approvedToken && tokenApprovedBy == orderData.bidder);
+    const unclaimedToken = this._unclaimedToken(orderData.tokenId);
     const memo = 'AUC-CLAIM-' + orderData.contract + "-" +  orderData.tokenId;
     const args = [orderData.tokenId, orderData.owner, orderData.bidder, "1", memo];
     blockchain.callWithAuth(orderData.contract, 'transfer', JSON.stringify(args));
 
     this._setTotalSell(orderData.owner);
     this._setTotalBuy(orderData.bidder);
-    this._removeUserSaleBids(orderData, orderData.owner, saleOrder, approvedToken);
+    this._removeUserSaleBids(orderData, orderData.owner, saleOrder, unclaimedToken);
     this._removeUserSaleBids(orderData, orderData.bidder, bidOrder);
     this._removeOrder(orderId);
     this._DaoFee(contract, orderData);
     this._burn(orderData);
-    this._mint(orderData.contract, orderData.owner, orderId, approvedByBidder);
+    this._mint(orderData.contract, orderData.owner);
+    this._removeUnclaimedToken(orderData.tokenId);
     return;
   }
 
