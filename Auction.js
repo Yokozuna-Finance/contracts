@@ -482,7 +482,7 @@ class Auction {
 
   }
 
-  _sale(tokenId, contract, owner){
+  _sale(tokenId, contract, owner, creator){
     const price = this._f(this._checkPrice()).toFixed(fixed);
     const symbol = TOKEN_SYMBOL;
     const contractInfo = this._getNFTInfo(contract, tokenId);
@@ -491,7 +491,7 @@ class Auction {
     const orderData = {
       orderId: orderId,
       actionCode: "SALE",
-      creator: tx.publisher,
+      creator: creator,
       owner: owner,
       nft: {
         tokenId: contractInfo.id,
@@ -520,7 +520,7 @@ class Auction {
     const contractName = blockchain.contractName();
     this._unclaim(contractName, true, false);
     this._isInAuction(contract, tokenId, contractName);
-    this._sale(tokenId, contract, contractName);
+    this._sale(tokenId, contract, contractName, blockchain.contractOwner());
     return;
   }
 
