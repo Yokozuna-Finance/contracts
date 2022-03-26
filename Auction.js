@@ -518,7 +518,7 @@ class Auction {
     this._requireAuth(caller);
     const contract = this._getNFT();
     const contractName = blockchain.contractName();
-    this._unclaim(contractName, true, false);
+    if (this._getRequest().caller.is_account) this._unclaim(contractName, true, false);
     this._isInAuction(contract, tokenId, contractName);
     this._sale(tokenId, contract, contractName, blockchain.contractOwner());
     return;
@@ -647,6 +647,10 @@ class Auction {
     this._requireOwner();
     this._setExpiry(expiry);
     return;
+  }
+
+  unclaimedOrders() {
+    this._unclaim(blockchain.contractName(), true, false);
   }
 
   can_update(data) {
