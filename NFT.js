@@ -18,6 +18,11 @@ class NFT {
     this._put('FUSION_FEE', +amount, false);
   }
 
+  _pad(id) {
+    let mask = "0000000000" + id.toString()
+    return mask.substring(mask.length-10);
+  }
+
   _getFusionFee() {
     this._get('FUSION_FEE', 2)
   }
@@ -118,7 +123,7 @@ class NFT {
   _generateID() {
     let currentID = this._get('zid', 1);
     this._put('zid', currentID + 1);
-    return "Yokozuna." + currentID.toString();
+    return this._pad(currentID);
   }
 
   _getRequest() {
@@ -222,14 +227,30 @@ class NFT {
     this._transferReceipt(tokenId, from, to, memo)
   }
 
+  _isExpired(orderData) {
+    if (orderData.expire !== null && (block.time >= orderData.expire)) {
+      return true;
+    }
+    return false;
+  }
+
   _getOrderCount() {
     // NFT_DATA_BASE + account
     const auctionContract = this._getAuction();
     const orderData = this._globalGet(auctionContract, 'ORDER_DATA.' + auctionContract, null); 
-    if (orderData && orderData.orderCount) {
-      return orderData.orderCount;
+    let orderCount = 0;
+
+    if (orderData !== null) {
+      orderData.orders.forEach(
+        (orderId)=> {
+          let order = this._globalGet(auctionContract, 'ORDER.' + orderId, null);
+          if (this._isExpired(order) === false) {
+            orderCount += 1;
+          }
+        }
+      )
     }
-    return 0;
+    return orderCount;
   }
 
   _getMaxOrderCOunt() {
@@ -378,6 +399,8 @@ class NFT {
       [nft1.gene, nft2.gene, fuse]
     )[0];
 
+    console.log('parent gene:', )
+    console.log('mutated gene:', mutated_gene)
     let mutated_ability = blockchain.call(
       this._getGeneScience(),
       "mixAbilities",
