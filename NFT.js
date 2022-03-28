@@ -227,30 +227,14 @@ class NFT {
     this._transferReceipt(tokenId, from, to, memo)
   }
 
-  _isExpired(orderData) {
-    if (orderData.expire !== null && (block.time >= orderData.expire)) {
-      return true;
-    }
-    return false;
-  }
-
   _getOrderCount() {
     // NFT_DATA_BASE + account
     const auctionContract = this._getAuction();
     const orderData = this._globalGet(auctionContract, 'ORDER_DATA.' + auctionContract, null); 
-    let orderCount = 0;
-
-    if (orderData !== null) {
-      orderData.orders.forEach(
-        (orderId)=> {
-          let order = this._globalGet(auctionContract, 'ORDER.' + orderId, null);
-          if (this._isExpired(order) === false) {
-            orderCount += 1;
-          }
-        }
-      )
+    if (orderData && orderData.orderCount) {
+      return orderData.orderCount;
     }
-    return orderCount;
+    return 0;
   }
 
   _getMaxOrderCOunt() {
@@ -261,43 +245,6 @@ class NFT {
   generateNFT(gene, ability) { 
     this._requireOwner();
     return this._generate(gene, ability, this._getAuction());
-  }
-
-  generateInitialNFT() {
-    this._requireOwner();
-
-    let currentID = this._get('zid', 1);
-    if (currentID > 1) {
-        throw 'This ABI method can only be called once.';
-    }
-
-    let seed = block.time / 1000;
-    function _random(mod=100) {
-      seed ^= seed << 13; 
-      seed ^= seed >> 17;
-      seed ^= seed << 5;
-      var res = (seed <0) ? ~seed+1 : seed;
-      return res % mod;
-    }
-
-    let memo = 'NFT initial mint.'
-    for (let x = 0; x < 10; x++) {
-      let genes = '';
-      for (let i = 0; i < 48; i++) {
-        genes += (_random(8) + 1) .toString();
-      }
-
-      let attributes = (_random(30) + 1).toString() + '-' + 
-        (_random(30) + 1).toString() + '-' + 
-        (_random(30) + 1).toString();
-      let tokenId = this._generate(genes, attributes, blockchain.contractName());
-
-      blockchain.callWithAuth(
-        blockchain.contractName(), 
-        'transfer', 
-        [tokenId, blockchain.contractName(), this._getAuction(), '1', memo]
-      )
-    }
   }
 
   _transferReceipt(tokenId, from, to, memo) {
@@ -353,10 +300,14 @@ class NFT {
   mint() {
     const auctionContract = this._getAuction();
     this._callExternalABI(auctionContract, "unclaimedOrders");
+    console.log('>>>>1', auctionContract)
     if (this._getOrderCount() < this._getMaxOrderCOunt()) {
       // decide which 2 nfts to mix???
+      console.log('>>>>2')
       let tokenID = this._generateRandomNFT();
+      console.log('>>>>3', tokenID, auctionContract)
       this._callExternalABI(auctionContract, "sale", [tokenID]);
+      console.log('>>>>4')
       return tokenID;
     }
   }
@@ -368,6 +319,10 @@ class NFT {
   }
 
   _generateRandomNFT(){
+    return this._mint(this._getAuction());
+  }
+
+  _mint(owner) {
     let seed = block.time / 1000;
     function _random(mod=100) {
       seed ^= seed << 13; 
@@ -377,24 +332,32 @@ class NFT {
       return res % mod;
     }
 
-    let tokenList = this._mapGet('userNFT', this._getAuction(), []);
+    let memo = 'NFT transfer for auction.'
+    let genes = '';
+    for (let i = 0; i < 48; i++) {
+      genes += (_random(10) + 1) .toString();
+    }
 
-    let random1 = _random(tokenList.length);
-    let random2 = _random(tokenList.length);
-    let nftID1 = tokenList[random1];
-    let nftID2 = tokenList[random2];
+    let attributes = (_random(30) + 1).toString() + '-' + 
+      (_random(30) + 1).toString() + '-' + 
+      (_random(30) + 1).toString();
+    let tokenId = this._generate(genes, attributes, blockchain.contractName());
 
-    let nftInfo1 = this._get('znft.' + nftID1);
-    let nftInfo2 = this._get('znft.' + nftID2);
-    return this._mint(nftInfo1, nftInfo2, this._getAuction(), false);
+    blockchain.callWithAuth(
+      blockchain.contractName(), 
+      'transfer', 
+      [tokenId, blockchain.contractName(), this._getAuction(), '1', memo]
+    )
+
+    return tokenId;
   }
 
-  _mint(nft1, nft2, owner, fuse=false) {
+  _fuse(nft1, nft2, owner) {
     // generate nft by breeding
     let mutated_gene = blockchain.call(
       this._getGeneScience(), 
       "mixGenes", 
-      [nft1.gene, nft2.gene, fuse]
+      [nft1.gene, nft2.gene, true]
     )[0];
 
     console.log('parent gene:', )
@@ -402,7 +365,7 @@ class NFT {
     let mutated_ability = blockchain.call(
       this._getGeneScience(),
       "mixAbilities",
-      [nft1.ability, nft2.ability, fuse]
+      [nft1.ability, nft2.ability, true]
     )[0];
 
     let tokenId = this._generate(
@@ -410,11 +373,8 @@ class NFT {
       mutated_ability,
       blockchain.contractName()
     );
-    let memo = 'NFT transfer for auction';
-
-    if (fuse === true) {
-      memo = 'NFT transfer on fusion'; 
-    }
+    
+    memo = 'NFT transfer on fusion'; 
     blockchain.callWithAuth(
         blockchain.contractName(), 
         'transfer', 
@@ -465,7 +425,7 @@ class NFT {
        "Transaction fee."]
     );
 
-    this._mint(nftInfo1, nftInfo2, tx.publisher, true)
+    this._fuse(nftInfo1, nftInfo2, tx.publisher)
 
     // burn the merged nfts
     this._burn(nftID1);
