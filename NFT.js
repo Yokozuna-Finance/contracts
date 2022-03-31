@@ -24,7 +24,7 @@ class NFT {
   }
 
   _getFusionFee() {
-    this._get('FUSION_FEE', 2)
+    return this._get('FUSION_FEE', 2)
   }
 
   _getGeneScience(){
