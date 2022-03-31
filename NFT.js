@@ -374,7 +374,7 @@ class NFT {
       blockchain.contractName()
     );
     
-    memo = 'NFT transfer on fusion'; 
+    const memo = 'NFT transfer on fusion'; 
     blockchain.callWithAuth(
         blockchain.contractName(), 
         'transfer', 
