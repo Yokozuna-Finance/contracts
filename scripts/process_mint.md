@@ -6,7 +6,7 @@ Contains script dependency packages.
 
 ## process_mint.py
 
-This script executes `mint` ABI call and if there are unclaimed order, it executes the `mint` until it fill the maximum order set by the auction contract. To Run:
+This script executes `mint` ABI call and if there are unclaimed orders, it executes the `mint` until it fill the maximum order set by the auction contract. To Run:
 
 ```
 python process_mint.py
@@ -14,10 +14,10 @@ python process_mint.py
 
 # .env files
 
-This are the settings intended for the different environment we use. To enable just create a symlink of the of the env file to be use to `.env`, for example to use the `.env.local`:
+The settings are intended for different environment we use. To enable it, just create a symlink of the of the env file to be used to `.env`, for example to use the `.env.local`:
 
 ```
-ln -s .env.local .env 
+ln -s .env.local .env
 ```
 
 ## Settings definitions
