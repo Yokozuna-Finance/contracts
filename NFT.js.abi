@@ -11,6 +11,14 @@
             "description": ""
         },
         {
+            "name": "setFusionFee",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "setAuction",
             "args": [
                 "string"
@@ -88,6 +96,14 @@
             "description": ""
         },
         {
+            "name": "updateBondInfo",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "updateAuctionSlot",
             "args": [],
             "amountLimit": [],
@@ -97,12 +113,21 @@
             "name": "fuse",
             "args": [
                 "string",
+                "string",
                 "string"
             ],
             "amountLimit": [{
                 "token": "*",
                 "val": "unlimited"
             }],
+            "description": ""
+        },
+        {
+            "name": "claimBond",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
             "description": ""
         },
         {
