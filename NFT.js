@@ -1,4 +1,14 @@
 const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
+const ALPHA = '123456789abcdefghijkmnopqrstuvwx';
+const YEAR_TO_DAYS = 365;
+const TOKEN_PRECISION = 6;
+const ROUND_DOWN = 1;
+const BOND_COMMISSION = {
+    Y1: .10,
+    Y3: .05,
+    Y5: .01,
+    Y10: 0
+}
 
 class NFT {
 
@@ -16,6 +26,10 @@ class NFT {
   setFusionFee(amount) {
     this._requireOwner();
     this._put('FUSION_FEE', +amount, false);
+  }
+
+  _getToday() {
+    return Math.floor(block.time / 1e9 / 3600 / 24);
   }
 
   _pad(id) {
@@ -194,8 +208,6 @@ class NFT {
         creator: blockchain.contractName()
     }
 
-    console.log("TokenInfo:", tokenInfo);
-
     this._put('zun.' + currentID, owner);
     this._put('znft.' + currentID, tokenInfo, true);
 
@@ -300,14 +312,10 @@ class NFT {
   mint() {
     const auctionContract = this._getAuction();
     this._callExternalABI(auctionContract, "unclaimedOrders");
-    console.log('>>>>1', auctionContract)
     if (this._getOrderCount() < this._getMaxOrderCOunt()) {
       // decide which 2 nfts to mix???
-      console.log('>>>>2')
       let tokenID = this._generateRandomNFT();
-      console.log('>>>>3', tokenID, auctionContract)
       this._callExternalABI(auctionContract, "sale", [tokenID]);
-      console.log('>>>>4')
       return tokenID;
     }
   }
@@ -335,7 +343,7 @@ class NFT {
     let memo = 'NFT transfer for auction.'
     let genes = '';
     for (let i = 0; i < 48; i++) {
-      genes += (_random(10) + 1) .toString();
+      genes += ALPHA[_random(10)];
     }
 
     let attributes = (_random(30) + 1).toString() + '-' + 
@@ -352,7 +360,7 @@ class NFT {
     return tokenId;
   }
 
-  _fuse(nft1, nft2, owner) {
+  _fuse(nft1, nft2, owner, tenor) {
     // generate nft by breeding
     let mutated_gene = blockchain.call(
       this._getGeneScience(), 
@@ -360,8 +368,6 @@ class NFT {
       [nft1.gene, nft2.gene, true]
     )[0];
 
-    console.log('parent gene:', )
-    console.log('mutated gene:', mutated_gene)
     let mutated_ability = blockchain.call(
       this._getGeneScience(),
       "mixAbilities",
@@ -373,19 +379,51 @@ class NFT {
       mutated_ability,
       blockchain.contractName()
     );
-    
-    const memo = 'NFT transfer on fusion'; 
+
+    let bondPrice = this._getBondPrice(nft1, nft2, tenor)
+    let memo = 'NFT transfer on fusion'; 
     blockchain.callWithAuth(
         blockchain.contractName(), 
         'transfer', 
         [tokenId, blockchain.contractName(), owner, '1', memo]
     )
+    this._updateBondInfo(tokenId, bondPrice, tenor)
     return tokenId;
   }
 
   _burn(nftID) {
     // remove it
     this.transfer(nftID, tx.publisher, 'deadaddr', '1', 'burn nft token');
+  }
+
+  updateBondInfo(orderId) {
+    // only expired bid can be updated
+    let orderData = this._globalGet(this._getAuction(), 'ORDER.' + orderId);
+
+    if (orderData.expire < block.time) {
+      let bondPrice = new Float64(orderData.price).div(2).toFixed(TOKEN_PRECISION, ROUND_DOWN)
+      this._updateBondInfo(orderData.tokenId, bondPrice, 'Y1')
+    }
+  }
+
+  _updateBondInfo(tokenId, price, tenor) {
+    let tokenInfo = this._get('znft.' + tokenId);
+    if (tokenInfo.owner == tx.publisher) {
+      tokenInfo.bondPrice = +price;
+      tokenInfo.tenor = tenor;
+      tokenInfo.issueDate = this._getToday();
+      this._put('znft.' + tokenId, tokenInfo, true);
+    } else {
+        throw "Permission denied."
+    }
+  }
+
+  _getBondPrice(nft1, nft2, tenor) {
+    let b1Price = nft1.bondPrice || 0;
+    let b2Price = nft2.bondPrice || 0;
+    let bondPrice = new Float64(b1Price).plus(b2Price)
+    let comPrice = bondPrice.multi(BOND_COMMISSION[tenor]);
+    return bondPrice.minus(comPrice).toFixed(TOKEN_PRECISION, ROUND_DOWN)
   }
 
   updateAuctionSlot() { 
@@ -400,10 +438,14 @@ class NFT {
     }
   }
 
-  fuse(nftID1, nftID2) {
+  fuse(nftID1, nftID2, tenor) {
     // merge two nft
     if (nftID1 === nftID2) {
       throw "Cannot fuse same token.";
+    }
+
+    if (BOND_COMMISSION[tenor] === undefined) {
+        throw "Invalid tenor."
     }
 
     let owner1 = this._get('zun.' + nftID1);
@@ -425,11 +467,42 @@ class NFT {
        "Transaction fee."]
     );
 
-    this._fuse(nftInfo1, nftInfo2, tx.publisher)
-
+    let tokenId = this._fuse(nftInfo1, nftInfo2, tx.publisher, tenor);
     // burn the merged nfts
     this._burn(nftID1);
     this._burn(nftID2);
+
+    blockchain.receipt(JSON.stringify([tokenId, 'Fused token successful.']))
+    return tokenId;
+  }
+
+  _getMaturityDate(tokenInfo) {
+    if (tokenInfo.issueDate === undefined) {
+        throw 'Issue date is undefined.'
+    }
+    let days = +tokenInfo.tenor.replace('Y','') * YEAR_TO_DAYS || 0;
+    return tokenInfo.issueDate + days;
+  }
+
+  claimBond(tokenId) {
+    this._requireAuth(tx.publisher)
+    let tokenInfo = this._get('znft.' + tokenId);
+    if (tokenInfo.owner != tx.publisher) {
+      throw 'Permission denied.'
+    }
+
+    if (this._getMaturityDate(tokenInfo) > this._getToday()) {
+      throw 'NFT is not matured yet.'
+    }
+
+    blockchain.callWithAuth("token.iost", "transfer",
+      [YOKOZUNA_TOKEN_SYMBOL,
+        blockchain._getDAO(),
+        tokenInfo.owner,
+        tokenInfo.bondPrice,
+        "Claim bond rewards."]
+    );
+    this._burn(tokenId)
   }
 
   approveAll() {

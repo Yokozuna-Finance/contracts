@@ -231,6 +231,12 @@ class Auction {
     this._put(ORDER_COUNT_KEY, orderCount);
   }
 
+  _updateBondInfo(orderId) {
+    let orderData = this._getOrder(orderId);
+    let contract = this._getNFT();
+    blockchain.call(contract, "updateBondInfo", [orderId.toString()])
+  }
+
   _removeOrder(orderId){
     this._remove(ORDER_BASE + orderId);
     this._subOrderCount(1);
@@ -590,6 +596,7 @@ class Auction {
     this._setTotalBuy(orderData.bidder);
     this._removeUserSaleBids(orderData, orderData.owner, saleOrder, unclaimedToken);
     this._removeUserSaleBids(orderData, orderData.bidder, bidOrder);
+    this._updateBondInfo(orderId);
     this._removeOrder(orderId);
     this._DaoFee(contract, orderData);
     this._burn(orderData);
