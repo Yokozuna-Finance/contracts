@@ -57,6 +57,18 @@ class NFT {
     return this._get('auction',"", true);
   }
 
+  setDAO(contractID){
+    this._requireOwner()
+    if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
+      throw "Invalid contract ID."
+    }
+    this._put('dao', contractID, tx.publisher)
+  }
+
+  _getDAO(){
+    return this._get('dao',"", true);
+  }
+
   _get(k, d, parse) {
     const val = storage.get(k);
     if (val === null || val === "") {
@@ -458,13 +470,25 @@ class NFT {
       throw "Cannot fuse token that is not yours.";
     }
 
+    let fusionFee = new Float64(this._getFusionFee()).div(2).toFixed(
+        TOKEN_PRECISION, ROUND_DOWN
+    ).toString();
+
     // collect fee
     blockchain.callWithAuth("token.iost", "transfer",
       [YOKOZUNA_TOKEN_SYMBOL,
        tx.publisher,
-       blockchain.contractName(),
-       this._getFusionFee().toString(),
-       "Transaction fee."]
+       this._getDAO(),
+       fusionFee,
+       "Half transaction fee to DAO."]
+    );
+
+    blockchain.callWithAuth("token.iost", "transfer",
+      [YOKOZUNA_TOKEN_SYMBOL,
+       tx.publisher,
+       'deadaddr',
+       fusionFee,
+       "Half transaction fee to deadaddr."]
     );
 
     let tokenId = this._fuse(nftInfo1, nftInfo2, tx.publisher, tenor);
@@ -497,7 +521,7 @@ class NFT {
 
     blockchain.callWithAuth("token.iost", "transfer",
       [YOKOZUNA_TOKEN_SYMBOL,
-        blockchain._getDAO(),
+        this._getDAO(),
         tokenInfo.owner,
         tokenInfo.bondPrice,
         "Claim bond rewards."]
