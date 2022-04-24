@@ -355,7 +355,7 @@ class NFT {
     let memo = 'NFT transfer for auction.'
     let genes = '';
     for (let i = 0; i < 48; i++) {
-      genes += ALPHA[_random(10)];
+      genes += ALPHA[_random(6)];
     }
 
     let attributes = (_random(30) + 1).toString() + '-' + 

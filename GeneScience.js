@@ -129,7 +129,6 @@ class GeneScience {
         abSum += ab;  
       }
     }
-
     return (geneSum * multiplier) + abSum;
   }
 
@@ -170,7 +169,10 @@ class GeneScience {
 
         let gt = ab1 > ab2 ? ab1 : ab2;
         let lt = ab1 < ab2 ? ab1 : ab2;
-        res.push((gt + _random(lt)).toString())
+        let multiplier = [1,1,1,1,1,1.5,1.5,1.5,1.75,2];
+        let attr = gt + _random(lt);
+        attr = Math.ceil(multiplier[_random(multiplier.length)] * attr);
+        res.push(attr.toString());
       }
       return res.join("-");
     }
@@ -227,11 +229,14 @@ class GeneScience {
         }
 
         if ((gene2 - gene1) == 1 && gene1 % 2 == 0) {
-          let probability = 25;
-          if (gene1 > 23) {
+          let probability = 60;
+          if (gene1 >= 6) {
             probability /= 2
             if ((_random()) < probability) {
-              mutation = ALPHA[(gene1/2)+_random(16)];
+              let idx = gene1+_random(3)+1;
+              if (idx+1 <= ALPHA.length){
+                mutation = ALPHA[idx];
+              }
             }
           }
         }
