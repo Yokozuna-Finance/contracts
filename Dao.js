@@ -230,7 +230,7 @@ class DAO {
     // add to user tokenId list
     this._addToUserTokenList(tokenId);
 
-    const userInfo = this._getUserInfo(tx.publisher);
+    let userInfo = this._getUserInfo(tx.publisher);
     if (!userInfo) {
       userInfo = {
         amount: "0",
@@ -275,7 +275,7 @@ class DAO {
     this._removeToUserTokenList(tokenId);
 
     let pool = this._getPool();
-    const userInfo = this._getUserInfo(tx.publisher);
+    let userInfo = this._getUserInfo(tx.publisher);
 
     pool = this._updatePool(pool);
 
@@ -319,7 +319,7 @@ class DAO {
   }
 
   claim() {
-    const userInfo = this._getUserInfo(tx.publisher);
+    let userInfo = this._getUserInfo(tx.publisher);
     let pool = this._getPool()
     pool = this._updatePool(pool);
 
