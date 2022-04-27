@@ -198,17 +198,47 @@ class NFT {
     blockchain.receipt(JSON.stringify([currentID, blockchain.contractName()]))
   }
 
-  _generate(gene, ability, owner) {
+  _generate(gene, ability, owner, fuse) {
     if(gene === undefined) {
         throw 'Invalid gene';
     }
 
+    let seed = block.time / 1000;
+    function _random(mod=100) {
+      seed ^= seed << 13; 
+      seed ^= seed >> 17;
+      seed ^= seed << 5;
+      var res = (seed <0) ? ~seed+1 : seed;
+      return res % mod;
+    }
+
+    let power;
     let currentID = this._generateID();
-    let power = blockchain.call(
-      this._getGeneScience(), 
-      "calculatePower", 
-      [gene, ability]
-    )[0];
+    if (fuse === false) {
+      power = blockchain.call(
+        this._getGeneScience(), 
+        "calculatePower", 
+        [gene, ability]
+      )[0];    
+    } else {
+      let multiplier; 
+      let rand = _random();
+      if (rand >= 0 && rand <= 39) {
+        multiplier = 1;
+      } else if (rand >= 40 && rand <= 64) {
+        multiplier = 2;
+      } else if (rand >= 65 && rand <= 79) {
+        multiplier = 3;
+      } else if (rand >= 80 && rand <= 89) {
+        multiplier = 4;
+      } else if (rand >= 90 && rand <= 94) {
+        multiplier = 5;
+      } else if (rand >= 95 && rand <= 99) {
+        multiplier = 0.25;
+      }
+      power = fuse * multiplier;
+    }
+    
 
     // NFT generation 
     let tokenInfo = {
@@ -268,7 +298,7 @@ class NFT {
 
   generateNFT(gene, ability) { 
     this._requireOwner();
-    return this._generate(gene, ability, this._getAuction());
+    return this._generate(gene, ability, this._getAuction(), false);
   }
 
   _transferReceipt(tokenId, from, to, memo) {
@@ -361,7 +391,7 @@ class NFT {
     let attributes = (_random(30) + 1).toString() + '-' + 
       (_random(30) + 1).toString() + '-' + 
       (_random(30) + 1).toString();
-    let tokenId = this._generate(genes, attributes, blockchain.contractName());
+    let tokenId = this._generate(genes, attributes, blockchain.contractName(), false);
 
     blockchain.callWithAuth(
       blockchain.contractName(), 
@@ -386,10 +416,12 @@ class NFT {
       [nft1.ability, nft2.ability, true]
     )[0];
 
+    let pushP = new Float64(nft1.pushPower).plus(nft2.pushPower);
     let tokenId = this._generate(
       mutated_gene,
       mutated_ability,
-      blockchain.contractName()
+      blockchain.contractName(),
+      pushP
     );
 
     let bondPrice = this._getBondPrice(nft1, nft2, tenor)
