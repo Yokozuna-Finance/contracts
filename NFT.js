@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
+const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
 const ALPHA = '123456789abcdefghijkmnopqrstuvwx';
 const YEAR_TO_DAYS = 365;
 const TOKEN_PRECISION = 6;
@@ -543,8 +543,13 @@ class NFT {
   claimBond(tokenId) {
     this._requireAuth(tx.publisher)
     let tokenInfo = this._get('znft.' + tokenId);
+    const stakedNFT = this._globalGet(this._getDAO(), 'staked.' + tx.publisher, [])
     if (tokenInfo.owner != tx.publisher) {
       throw 'Permission denied.'
+    }
+
+    if (stakedNFT.indexOf(tokenId) >= 0 ) {
+      this._callExternalABI(this._getDAO(), 'unstake', [tokenId])
     }
 
     if (this._getMaturityDate(tokenInfo) > this._getToday()) {
@@ -559,6 +564,7 @@ class NFT {
         "Claim bond rewards."]
     );
     this._burn(tokenId)
+    return tokenId;
   }
 
   approveAll() {

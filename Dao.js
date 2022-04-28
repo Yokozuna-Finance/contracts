@@ -1,7 +1,8 @@
 const DAILY_DISTRIBUTION = 10000;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
-const TOKEN_REWARD = 'iost';
+const TOKEN_REWARD = '<fix me>';
+const STAKE_LIMIT = 9;
 
 class DAO {
 
@@ -92,6 +93,22 @@ class DAO {
     this._put('nft', contractID, tx.publisher)
   }
 
+
+  setDailyDistibution(amount) {
+    this._requireOwner();
+
+    amount = +amount;
+
+    if (!amount || amount <= 0) {
+        throw 'Invalid amount'
+    }
+    this._put('dd', amount, tx.publisher)
+  }
+
+  _getDailyDistribution() {
+    return this._get('dd', DAILY_DISTRIBUTION);
+  }
+
   _getNFT() {
     return this._get('nft',"", true);
   }
@@ -101,7 +118,7 @@ class DAO {
   } 
 
   _addToUserTokenList(tokenId) {
-    const stakedNFT = this._get('staked.' + tx.publisher, [])
+    const stakedNFT = this._getUserStakedToken()
     if (stakedNFT.indexOf(tokenId) > 0) {
       throw "Token already staked."
     }
@@ -110,7 +127,7 @@ class DAO {
   }
 
   _removeToUserTokenList(tokenId) {
-    const stakedNFT = this._get('staked.' + tx.publisher, [])
+    const stakedNFT = this._getUserStakedToken()
     const stakedIdx = stakedNFT.indexOf(tokenId)
     if (stakedIdx < 0) {
       throw "Invalid token id."
@@ -119,8 +136,12 @@ class DAO {
     this._put('staked.' + tx.publisher, stakedNFT, true)
   }
 
+  _getUserStakedToken() {
+    return this._get('staked.' + tx.publisher, [])
+  }
+
   _getReward(pool, fromTime, toTime) {
-    const NET = DAILY_DISTRIBUTION - pool.distributed;
+    const NET = this._getDailyDistribution() - pool.distributed;
     return new BigNumber(NET).times(toTime - fromTime).div(3600 * 24);
   }
 
@@ -227,6 +248,14 @@ class DAO {
     if (nftInfo.owner !== tx.publisher) {
         throw "Permission denied.";
     }
+
+    if (this._getUserStakedToken().length >= STAKE_LIMIT) {
+        throw "Max staked NFT reached."
+    }
+
+    if (this._getUserStakedToken().indexOf(tokenId) >= 0) {
+        throw 'Token already staked.'
+    }
     // add to user tokenId list
     this._addToUserTokenList(tokenId);
 
@@ -263,14 +292,15 @@ class DAO {
     pool.total = new BigNumber(pool.total).plus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
     this._setPoolObj(pool);
     blockchain.receipt(JSON.stringify(["deposit", tokenId, nftInfo.pushPower]));
-    // compute for the total push power
-    // update total stake value 
-
   }
 
   unstake(tokenId) {
-    const stakedNFT = this._get('staked.' + tx.publisher, [])
+    const stakedNFT = this._getUserStakedToken();
     const nftInfo = this._getTokenDetails(tokenId);
+
+    if (stakedNFT.indexOf(tokenId) < 0 ) {
+      throw "Invalid token id."
+    }
     
     this._removeToUserTokenList(tokenId);
 
@@ -316,33 +346,6 @@ class DAO {
 
     blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, nftInfo.pushPower]));
     return nftInfo.pushPower;
-  }
-
-  claim() {
-    let userInfo = this._getUserInfo(tx.publisher);
-    let pool = this._getPool()
-    pool = this._updatePool(pool);
-
-    const userAmount = new BigNumber(userInfo.amount);
-    const pending = userAmount.times(pool.accPerShare).plus(
-        userInfo.rewardPending).minus(userInfo.rewardDebt);
-    const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
-
-    if (userAmount.gt(0)){
-      blockchain.callWithAuth("token.iost", "transfer",
-        [TOKEN_REWARD,
-         blockchain.contractName(),
-         tx.publisher,
-         pendingStr,
-         "Claiming token rewards"]);
-
-      userInfo.rewardPending = "0";
-      userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
-
-      blockchain.receipt(JSON.stringify(["claim", pendingStr]));
-      this._setUserInfo(tx.publisher, userInfo);    
-    }
-    
   }
 
   can_update(data) {
