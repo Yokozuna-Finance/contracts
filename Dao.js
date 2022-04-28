@@ -348,6 +348,32 @@ class DAO {
     return nftInfo.pushPower;
   }
 
+  claim() {
+    let userInfo = this._getUserInfo(tx.publisher);
+    let pool = this._getPool()
+    pool = this._updatePool(pool);
+
+    const userAmount = new BigNumber(userInfo.amount);
+    const pending = userAmount.times(pool.accPerShare).plus(
+        userInfo.rewardPending).minus(userInfo.rewardDebt);
+    const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
+
+    if (userAmount.gt(0)){
+      blockchain.callWithAuth("token.iost", "transfer",
+        [TOKEN_REWARD,
+         blockchain.contractName(),
+         tx.publisher,
+         pendingStr,
+         "Claiming token rewards"]);
+
+      userInfo.rewardPending = "0";
+      userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
+
+      blockchain.receipt(JSON.stringify(["claim", pendingStr]));
+      this._setUserInfo(tx.publisher, userInfo);    
+    } 
+  }
+
   can_update(data) {
     return blockchain.requireAuth(blockchain.contractOwner(), "active") && !this.isLocked();
   }

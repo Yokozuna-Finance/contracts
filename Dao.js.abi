@@ -67,6 +67,12 @@
             "description": ""
         },
         {
+            "name": "claim",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"
