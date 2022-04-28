@@ -223,18 +223,18 @@ class NFT {
     } else {
       let multiplier; 
       let rand = _random();
-      if (rand >= 0 && rand <= 39) {
+      if (rand >= 0 && rand <= 49) {
         multiplier = 1;
-      } else if (rand >= 40 && rand <= 64) {
+      } else if (rand >= 50 && rand <= 64) {
         multiplier = 2;
-      } else if (rand >= 65 && rand <= 79) {
+      } else if (rand >= 65 && rand <= 74) {
         multiplier = 3;
-      } else if (rand >= 80 && rand <= 89) {
+      } else if (rand >= 75 && rand <= 79) {
         multiplier = 4;
-      } else if (rand >= 90 && rand <= 94) {
+      } else if (rand >= 80 && rand <= 84) {
         multiplier = 5;
-      } else if (rand >= 95 && rand <= 99) {
-        multiplier = 0.25;
+      } else if (rand >= 85 && rand <= 99) {
+        multiplier = 0.5;
       }
       power = fuse * multiplier;
     }
