@@ -17,6 +17,14 @@
             "description": ""
         },
         {
+            "name": "setDailyDistibution",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "setStartDate",
             "args": [
                 "string"
@@ -26,6 +34,12 @@
         },
         {
             "name": "setPool",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "updateUserInfo",
             "args": [],
             "amountLimit": [],
             "description": ""
@@ -46,19 +60,10 @@
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "claim",
-            "args": [],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "updateUserInfo",
-            "args": [],
-            "amountLimit": [],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }],
             "description": ""
         },
         {
