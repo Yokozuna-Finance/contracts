@@ -1,6 +1,6 @@
 ## NFT Contract
 
-> Note: Make sure that the YOKOZUNA_TOKEN_SYMBOL in NFT.js is that same with YOKOZUNA_TOKEN_SYMBOL in Stake.js
+> Note: Make sure that the YOKOZUNA_TOKEN_SYMBOL in NFT.js is the same with YOKOZUNA_TOKEN_SYMBOL in Stake.js
 
 
 * Upload Contract
@@ -24,6 +24,15 @@
 
     ```
     iwallet --account hooda1985 -v call <NFT Contract ID> setAuction '["Auction Contract ID"]' -s 18.209.137.246:30002
+    ```
+
+
+* Set the DAO contract to be used by the NFT Contract
+
+    Used for NFT fusion
+
+    ```
+    iwallet --account hooda1985 -v call <NFT Contract ID> setDAO '["DAO Contract ID"]' -s 18.209.137.246:30002
     ```
 
 
@@ -72,5 +81,13 @@
 * Set the all the Bid winners as an approver of the NFT token they won.
     ```
     iwallet --account hooda1985 -v call <NFT Contract ID> approveAll '[]' -s 18.209.137.246:30002
+    ```
+
+
+* Claiming matured NFT
+    If we want to claim/withdraw of the NFT token we owned and get the bond price in return. The matured NFT will be unstaked if stake and burned upon claiming.
+
+    ```
+    iwallet --account hooda1985 -v call <NFT Contract ID>  claimBond '["<NFT ID>"]' -s 18.209.137.246:30002
     ```
 
