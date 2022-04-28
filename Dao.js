@@ -118,7 +118,7 @@ class DAO {
   } 
 
   _addToUserTokenList(tokenId) {
-    const stakedNFT = this._get('staked.' + tx.publisher, [])
+    const stakedNFT = this._getUserStakedToken()
     if (stakedNFT.indexOf(tokenId) > 0) {
       throw "Token already staked."
     }
@@ -127,7 +127,7 @@ class DAO {
   }
 
   _removeToUserTokenList(tokenId) {
-    const stakedNFT = this._get('staked.' + tx.publisher, [])
+    const stakedNFT = this._getUserStakedToken()
     const stakedIdx = stakedNFT.indexOf(tokenId)
     if (stakedIdx < 0) {
       throw "Invalid token id."
@@ -249,8 +249,12 @@ class DAO {
         throw "Permission denied.";
     }
 
-    if (this._getUserStakedToken() >= STAKE_LIMIT) {
+    if (this._getUserStakedToken().length >= STAKE_LIMIT) {
         throw "Max staked NFT reached."
+    }
+
+    if (this._getUserStakedToken().indexOf(tokenId) >= 0) {
+        throw 'Token already staked.'
     }
     // add to user tokenId list
     this._addToUserTokenList(tokenId);
@@ -291,7 +295,7 @@ class DAO {
   }
 
   unstake(tokenId) {
-    const stakedNFT = this._get('staked.' + tx.publisher, [])
+    const stakedNFT = this._getUserStakedToken();
     const nftInfo = this._getTokenDetails(tokenId);
 
     if (stakedNFT.indexOf(tokenId) < 0 ) {
