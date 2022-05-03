@@ -221,21 +221,23 @@ class NFT {
         [gene, ability]
       )[0];    
     } else {
-      let multiplier; 
+      let multiplier = 1; 
       let rand = _random();
-      if (rand >= 0 && rand <= 49) {
+      if (rand >= 0 && rand <= 39) {
         multiplier = 1;
-      } else if (rand >= 50 && rand <= 64) {
+      } else if (rand >= 40 && rand <= 59) {
         multiplier = 2;
-      } else if (rand >= 65 && rand <= 74) {
+      } else if (rand >= 60 && rand <= 66) {
         multiplier = 3;
-      } else if (rand >= 75 && rand <= 79) {
+      } else if (rand >= 67 && rand <= 68) {
         multiplier = 4;
-      } else if (rand >= 80 && rand <= 84) {
+      } else if (rand == 69) {
         multiplier = 5;
-      } else if (rand >= 85 && rand <= 99) {
+      } else if (rand >= 70 && rand <= 89) {
         multiplier = 0.5;
-      }
+      } else if (rand >= 90 && rand <= 99) {
+        multiplier = 0.25;
+      } 
       power = fuse * multiplier;
     }
     
