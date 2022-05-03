@@ -15,6 +15,19 @@ class NFT {
   init() {
   }
 
+  setStaticURL(url) {
+    this._requireOwner();
+    this._put('url', url, tx.publisher)
+  }
+
+  _getStaticURL() {
+    const url = this._get('url', null);
+    if (url === null) {
+        throw 'Static url is not set. please run the setStaticURL ABI call.'
+    }
+    return url;
+  }
+
   setGeneScience(contractID){
     this._requireOwner()
     if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
@@ -198,6 +211,10 @@ class NFT {
     blockchain.receipt(JSON.stringify([currentID, blockchain.contractName()]))
   }
 
+  _generateImageUrl(tokenId) {
+    return this._getStaticURL() + tokenId + '.png'
+  }
+
   _generate(gene, ability, owner, fuse) {
     if(gene === undefined) {
         throw 'Invalid gene';
@@ -249,6 +266,7 @@ class NFT {
         gene: gene,
         ability: ability,
         pushPower: power,
+        url: this._generateImageUrl(currentID),
         creator: blockchain.contractName()
     }
 

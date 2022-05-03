@@ -19,6 +19,14 @@
             "description": ""
         },
         {
+            "name": "setStaticURL",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "setAuction",
             "args": [
                 "string"
