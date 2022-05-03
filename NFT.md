@@ -36,6 +36,14 @@
     ```
 
 
+* Set Static Image Base URL
+
+   Used in adding NFT static image location which is in the NFT metadata
+
+   ```
+    iwallet --account hooda1985 -v call <NFT Contract ID> setStaticURL '["https://static.yokozuna.fi/"]' -s 18.209.137.246:30002
+    ```
+
 * Mint / Generate new NFT
 
     When minting NFT, we use random genes and attributes  from the contract owner's set of NFTs. Same concept of fusion but we dont burn the 2 NFT used for minting. Minting also calls the Auction contract's sale ABI call.
