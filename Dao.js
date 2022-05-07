@@ -140,9 +140,8 @@ class DAO {
     return this._get('staked.' + tx.publisher, [])
   }
 
-  _getReward(pool, fromTime, toTime) {
-    const NET = this._getDailyDistribution() - pool.distributed;
-    return new BigNumber(NET).times(toTime - fromTime).div(3600 * 24);
+  _getReward(pool, toTime) {
+    return new BigNumber(this._getDailyDistribution()).times(toTime - pool.lastRewardTime).div(3600 * 24);
   }
 
   _setPoolObj(pool) {
@@ -164,26 +163,11 @@ class DAO {
       return pool;
     }
 
-    if (now > pool.end) {
-      let reward = this._getReward(pool, pool.lastRewardTime, pool.end)
-      pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
-      pool.lastRewardTime = pool.end;
-      // reset to zero
-      pool.distributed = 0;
-      pool.start = pool.end;
-      pool.end = pool.start + 86400;
-
-      let reward2 = this._getReward(pool, pool.lastRewardTime, now)
-      pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward2.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
-      pool.lastRewardTime = now;
-      pool.distributed = reward2
-
-    } else {
-      let reward = this._getReward(pool, pool.lastRewardTime, now)
-      pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
-      pool.lastRewardTime = now;
-      pool.distributed = new BigNumber(pool.distributed).plus(reward).toFixed(pool.tokenPrecision, ROUND_DOWN);
-    }
+    
+    let reward = this._getReward(pool, now)
+    pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
+    pool.lastRewardTime = now;
+    pool.distributed = new BigNumber(pool.distributed).plus(reward).toFixed(pool.tokenPrecision, ROUND_DOWN);
     
     this._setPoolObj(pool);
     return pool;
@@ -214,8 +198,6 @@ class DAO {
         tokenPrecision: 8,
         lastRewardTime: lastRewardTime,
         accPerShare: "0",
-        start: startDate,
-        end: startDate + 86400, // 24hrs
         distributed:0,
       },
       true
