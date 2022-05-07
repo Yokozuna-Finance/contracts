@@ -217,7 +217,8 @@ class GeneScience {
     }
 
     for (let i = 0; i < 48; i++) {
-      let mutation = 0
+      let mutation = 0;
+      let probability = 0;
       if (i % 4 == 0) {
         let gene1 = KAI_MAPPING[mgenes[i]];
         let gene2 = KAI_MAPPING[sgenes[i]];
@@ -229,14 +230,16 @@ class GeneScience {
         }
 
         if ((gene2 - gene1) == 1 && gene1 % 2 == 0) {
-          let probability = 60;
-          if (gene1 >= 6) {
-            probability /= 2
-            if ((_random()) < probability) {
-              let idx = gene1+_random(3)+1;
-              if (idx+1 <= ALPHA.length){
-                mutation = ALPHA[idx];
-              }
+          probability = 80;
+        } else if ( gene1 % 2 == 0) {
+          probability = 10;
+        }
+
+        if (probability) {
+          if ((_random()) < probability) {
+            let idx = gene1+_random(3)+1;
+            if (idx+1 <= ALPHA.length){
+              mutation = ALPHA[idx];
             }
           }
         }
@@ -245,10 +248,18 @@ class GeneScience {
       if (mutation) {
         babygenes[i] = mutation;
       } else {
-        if (_random() < 50) {
-          babygenes[i] = mgenes[i]
+        if (KAI_MAPPING[mgenes[i]] > KAI_MAPPING[sgenes[i]]) {
+          if(_random() > 79){
+            babygenes[i] = sgenes[i]
+          } else {
+            babygenes[i] = mgenes[i]
+          }
         } else {
-          babygenes[i] = sgenes[i]
+          if(_random() > 19){
+            babygenes[i] = sgenes[i]
+          } else {
+            babygenes[i] = mgenes[i]
+          }
         }
       }
     }
