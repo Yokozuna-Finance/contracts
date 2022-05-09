@@ -436,6 +436,14 @@ class NFT {
       [nft1.ability, nft2.ability, true]
     )[0];
 
+    let tenorValue = +tenor.replace('Y','');
+    let tenor1 = +nft1.tenor.replace('Y','');
+    let tenor2 = +nft2.tenor.replace('Y','');
+
+    if (tenorValue < tenor1 || tenorValue < tenor2) {
+      tenor = tenor1 > tenor2 ? nft1.tenor : nft2.tenor;
+    }
+
     let pushP = new Float64(nft1.pushPower).plus(nft2.pushPower);
     let tokenId = this._generate(
       mutated_gene,
