@@ -298,7 +298,7 @@ class Auction {
     this._put(PRICE_PER_MINT_KEY, price);
   }
 
-  _setMaxOrder(maxNumber=9) {
+  _setMaxOrder(maxNumber=12) {
     this._put(MAX_ORDER_COUNT, maxNumber);
   }
 
@@ -318,7 +318,7 @@ class Auction {
     return this._get(DATE_KEY);
   }
 
-  _setExpiry(expiry=3600){
+  _setExpiry(expiry=600){
     this._put(AUCTION_EXPIRY_KEY, expiry);
   }
 
