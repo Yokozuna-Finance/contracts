@@ -229,9 +229,9 @@ class GeneScience {
           gene2 = temp;
         }
 
-        if ((gene2 - gene1) == 1 && gene1 % 2 == 0) {
+        if (gene1 % 2 == 0) {
           probability = 80;
-        } else if ( gene1 % 2 == 0) {
+        } else {
           probability = 10;
         }
 
