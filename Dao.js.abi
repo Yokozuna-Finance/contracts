@@ -73,6 +73,14 @@
             "description": ""
         },
         {
+            "name": "calculate",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"

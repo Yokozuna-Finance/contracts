@@ -141,7 +141,8 @@ class DAO {
   }
 
   _getReward(pool, toTime) {
-    return new BigNumber(this._getDailyDistribution()).times(toTime - pool.lastRewardTime).div(3600 * 24);
+    const elapsedTime = new BigNumber(toTime).minus(pool.lastRewardTime).div(86400)
+    return elapsedTime.times(this._getDailyDistribution());
   }
 
   _setPoolObj(pool) {
@@ -154,7 +155,6 @@ class DAO {
 
   _updatePool(pool) {
     const now = this._getNow();
-
     const total = new BigNumber(pool.total);
 
     if (total.eq(0)) {
@@ -167,7 +167,6 @@ class DAO {
     let reward = this._getReward(pool, now)
     pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
     pool.lastRewardTime = now;
-    pool.distributed = new BigNumber(pool.distributed).plus(reward).toFixed(pool.tokenPrecision, ROUND_DOWN);
     
     this._setPoolObj(pool);
     return pool;
@@ -197,8 +196,7 @@ class DAO {
         total: "0",
         tokenPrecision: 8,
         lastRewardTime: lastRewardTime,
-        accPerShare: "0",
-        distributed:0,
+        accPerShare: "0"
       },
       true
     )
@@ -340,7 +338,7 @@ class DAO {
         userInfo.rewardPending).minus(userInfo.rewardDebt);
     const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
 
-    if (userAmount.gt(0)){
+    if (pending.gt(0)){
       blockchain.callWithAuth("token.iost", "transfer",
         [TOKEN_REWARD,
          blockchain.contractName(),
@@ -353,7 +351,20 @@ class DAO {
 
       blockchain.receipt(JSON.stringify(["claim", pendingStr]));
       this._setUserInfo(tx.publisher, userInfo);    
-    } 
+    }
+  }
+
+  calculate(user) {
+    let userInfo = this._getUserInfo(user);
+    let pool = this._getPool()
+    pool = this._updatePool(pool);
+
+    const userAmount = new BigNumber(userInfo.amount);
+    const pending = userAmount.times(pool.accPerShare).plus(
+        userInfo.rewardPending).minus(userInfo.rewardDebt);
+    const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
+
+    return [pool, pendingStr, userInfo]
   }
 
   can_update(data) {
