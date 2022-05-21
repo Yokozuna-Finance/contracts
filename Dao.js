@@ -184,12 +184,18 @@ class DAO {
 
 
   setPool() {
-    // this._requireOwner();
-    // used for testing
+    this._requireOwner();
+
     const now = this._getNow();
     const startDate = this._get('start', undefined);
-    const lastRewardTime = now > startDate ? now : startDate;
+    let lastRewardTime;
 
+    if (startDate === undefined) {
+      lastRewardTime = now;
+    } else {
+      lastRewardTime = now > startDate ? now : startDate;    
+    }
+    
     this._put(
       'pool', 
       {
@@ -208,17 +214,6 @@ class DAO {
 
   _getUserInfo(who) {
     return this._mapGet("userInfo", who, null);
-  }
-
-  updateUserInfo() {
-    // used for testing
-    const userInfo = {
-        amount: "0",
-        rewardPending: "0",
-        rewardDebt: "0"
-      }
-
-    this._setUserInfo('testnft', userInfo);
   }
 
   stake(tokenId) {

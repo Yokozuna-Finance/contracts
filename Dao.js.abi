@@ -39,12 +39,6 @@
             "description": ""
         },
         {
-            "name": "updateUserInfo",
-            "args": [],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
             "name": "stake",
             "args": [
                 "string"

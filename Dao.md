@@ -1,6 +1,6 @@
 ## DAO Contract
 
-> Note: Make sure that the TOKEN_REWARD in Dao.js defined is correct.
+> Note: Make sure that the TOKEN_REWARD in Dao.js defined is correct. We will be using iost in production
 
 
 * Upload Contract
@@ -26,6 +26,14 @@
     iwallet --account hooda1985 -v call <DAO Contract ID> setStartDate '["1637225321"]' -s 18.209.137.246:30002
     ```
 
+
+* Set daily token distribution/staking reward.
+
+    By default it is set to 10,000
+
+    ```
+    iwallet --account hooda1985 -v call <DAO Contract ID> setDailyDistibution '["5000"]' -s 18.209.137.246:30002
+    ```
 
 * Set the initial NFT pool parameters
 
