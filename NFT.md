@@ -40,8 +40,16 @@
 
    Used in adding NFT static image location which is in the NFT metadata
 
-   ```
+    ```
     iwallet --account hooda1985 -v call <NFT Contract ID> setStaticURL '["https://static.yokozuna.fi/"]' -s 18.209.137.246:30002
+    ```
+
+* Set fusion fee. 
+ 
+    By default fusion fee is set to 2 YOKOZUNA_TOKEN_SYMBOL
+
+    ```
+    iwallet --account hooda1985 -v call <NFT Contract ID> setFusionFee '["<amount>"]' -s 18.209.137.246:30002
     ```
 
 * Mint / Generate new NFT
