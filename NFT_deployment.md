@@ -40,19 +40,19 @@ iwallet --account <user> -v call <NFT Contract ID> setAuction '["Auction Contrac
 * Set the DAO contract
 
 ```
-iwallet --account hooda1985 -v call <NFT Contract ID> setDAO '["ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call <NFT Contract ID> setDAO '["ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B"]' -s 18.209.137.246:30002
 ```
 
 * Set Static Image Base URL
 
 ```
-iwallet --account hooda1985 -v call <NFT Contract ID> setStaticURL '["https://static.yokozuna.fi/"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call <NFT Contract ID> setStaticURL '["https://static.yokozuna.fi/"]' -s 18.209.137.246:30002
 ```
 
 * Set Fusion Fee?? By default fusion fee is 2 zuna
 
 ```
-iwallet --account hooda1985 -v call <NFT Contract ID> setFusionFee '["<amount>"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call <NFT Contract ID> setFusionFee '["<amount>"]' -s 18.209.137.246:30002
 ```
 
 
@@ -61,19 +61,19 @@ iwallet --account hooda1985 -v call <NFT Contract ID> setFusionFee '["<amount>"]
 * Set the NFT contract
 
 ```
-iwallet --account admin -v call <Auction Contract>  setNFT '["<NFT Contract>"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call <Auction Contract>  setNFT '["<NFT Contract>"]' -s 18.209.137.246:30002
 ```
 
 * Set the DAO contract
 
 ```
-iwallet --account admin -v call <Auction Contract>  setDao '["ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call <Auction Contract>  setDao '["ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B"]' -s 18.209.137.246:30002
 ```
 
 * Set the bid expiry??? By default it is set to 600secs or 10mins
 
 ```
-iwallet --account admin -v call <Auction Contract>  setExpiry '[3600]' -s 18.209.137.246:30002
+iwallet --account <user> -v call <Auction Contract>  setExpiry '[3600]' -s 18.209.137.246:30002
 ```
 
 
@@ -82,17 +82,17 @@ iwallet --account admin -v call <Auction Contract>  setExpiry '[3600]' -s 18.209
 * Set the NFT contract
 
 ```
-iwallet --account hooda1985 -v call ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B setNFT '["NFT Contract ID"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B setNFT '["NFT Contract ID"]' -s 18.209.137.246:30002
 ```
 
 * Set staking start date
 
 ```
-iwallet --account hooda1985 -v call ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B setStartDate '["<epoch timestamp>"]' -s 18.209.137.246:30002
+iwallet --account <user> -v call ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B setStartDate '["<epoch timestamp>"]' -s 18.209.137.246:30002
 ```
 
 * Set initial pool parameters
 
 ```
-iwallet --account hooda1985 -v call ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B setPool '[]' -s 18.209.137.246:30002
+iwallet --account <user> -v call ContractCATsN9WGzNZKB87A4hLsVGKXGJWQ7veqWaH6ogkLJX3B setPool '[]' -s 18.209.137.246:30002
 ```
