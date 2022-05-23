@@ -100,8 +100,8 @@ class Snapshot:
         self._process()
         print('Getting user list done!')
 
-    def distribute(self, filename, token_amount):
-        print("Running airdrop distibution of {} ZUNA from {}.csv file...".format(token_amount, filename))
+    def distribute(self, filename):
+        print("Running airdrop distibution of ZUNA NFT from {}.csv file...".format(filename))
         with open("{}.csv".format(filename), "r") as f:
             reader = csv.reader(f)
             users = [user[0] for user in reader]
@@ -112,18 +112,13 @@ class Snapshot:
         self._setup_account()
         self._setup_server()
 
-        users = ['admin', 'testnft']
+        #users = ['admin', 'testnft']
         for user in users:
-            tx = self.iost.create_transfer_tx(
-                'zuna', 
-                config('ACCOUNT'), 
-                user, 
-                token_amount, 
-                'Zuna airdrop!'
-            )
+            tx = self.iost.create_call_tx(config('NFT_CONTRACT_ID'), 'sendNFT', user)
             response = self._execute_tx(tx)
             for receipt in response.receipts:
                 print(receipt.func_name, receipt.content)
+            print('\n')
 
         print('Airdrop distribution done!')
 
@@ -141,17 +136,11 @@ if __name__ ==  "__main__":
         default='get_users',
         choices=['get_users', 'distribute']
     )
-    parser.add_argument('-t', '--token_amount',
-        help='amount of token to be distributed',
-        type=int
-    )
 
     args = parser.parse_args()
 
     snapshot = Snapshot(args.min, args.filename)
     if args.action == 'distribute':
-        if not args.token_amount or args.token_amount < 1:
-            raise argparse.ArgumentError(args.token_amount, "--token_amount is required on --action distribute")
-        getattr(snapshot, args.action)(args.filename, args.token_amount)
+        getattr(snapshot, args.action)(args.filename)
     else:
         getattr(snapshot, args.action)()

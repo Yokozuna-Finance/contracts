@@ -31,7 +31,7 @@ optional arguments:
 
 # .env files
 
-This are the settings intended for the different environment we use. To enable just create a symlink of the of the env file to be use to `.env`, for example to use the `.env.local`:
+These are the settings intended for the different environment we use. To enable just create a symlink of the of the env file to be use to `.env`, for example to use the `.env.local`:
 
 ```
 ln -s .env.local .env 
