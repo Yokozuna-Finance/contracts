@@ -229,10 +229,25 @@ class GeneScience {
           gene2 = temp;
         }
 
-        if (gene1 % 2 == 0) {
-          probability = 80;
+        if (i == 0 ) {
+          // body type
+          if (gene1 <= 8) {
+            probability = 90;
+          } else if (gene1 >= 9 && gene1 <= 16) {
+            probability = 50;
+          } else if (gene1 >= 17 && gene1 <= 19) {
+            probability = 30;
+          } else if (gene1 >= 20 && gene1 <= 23) {
+            probability = 15;
+          } else if (gene1 >= 24 && gene1 <= 26) {
+            probability = 5;
+          }
         } else {
-          probability = 10;
+          if (gene1 % 2 == 0) {
+            probability = 70;
+          } else {
+            probability = 10;
+          }
         }
 
         if (probability) {
