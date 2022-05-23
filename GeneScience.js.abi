@@ -3,13 +3,7 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "isLocked",
-            "args": [],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "setNFT",
+            "name": "hexToBn",
             "args": [
                 "string"
             ],
@@ -17,7 +11,7 @@
             "description": ""
         },
         {
-            "name": "setDailyDistibution",
+            "name": "encode",
             "args": [
                 "string"
             ],
@@ -25,49 +19,7 @@
             "description": ""
         },
         {
-            "name": "setStartDate",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "setPool",
-            "args": [],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "stake",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [{
-                "token": "*",
-                "val": "unlimited"
-            }],
-            "description": ""
-        },
-        {
-            "name": "unstake",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [{
-                "token": "*",
-                "val": "unlimited"
-            }],
-            "description": ""
-        },
-        {
-            "name": "claim",
-            "args": [],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "calculate",
+            "name": "decode",
             "args": [
                 "string"
             ],
@@ -79,6 +31,55 @@
             "args": [
                 "string"
             ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "isLocked",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "setGeneMultiplier",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "calculatePower",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "mixAbilities",
+            "args": [
+                "string",
+                "string",
+                "bool"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "mixGenes",
+            "args": [
+                "string",
+                "string",
+                "bool"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "version",
+            "args": [],
             "amountLimit": [],
             "description": ""
         }

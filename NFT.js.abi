@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "can_update",
+            "name": "setGeneScience",
             "args": [
                 "string"
             ],
@@ -11,13 +11,7 @@
             "description": ""
         },
         {
-            "name": "isLocked",
-            "args": [],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "setPercentage",
+            "name": "setFusionFee",
             "args": [
                 "string"
             ],
@@ -25,7 +19,7 @@
             "description": ""
         },
         {
-            "name": "setFarmDate",
+            "name": "setStaticURL",
             "args": [
                 "string"
             ],
@@ -33,24 +27,7 @@
             "description": ""
         },
         {
-            "name": "clearLog",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "issueToken",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "setSwap",
+            "name": "setAuction",
             "args": [
                 "string"
             ],
@@ -66,28 +43,7 @@
             "description": ""
         },
         {
-            "name": "getUserTokenAmount",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "addPooltoVault",
-            "args": [
-                "string",
-                "string",
-                "string",
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "setProducerName",
+            "name": "can_update",
             "args": [
                 "string"
             ],
@@ -95,14 +51,17 @@
             "description": ""
         },
         {
-            "name": "startTimeLock",
+            "name": "isLocked",
             "args": [],
             "amountLimit": [],
             "description": ""
         },
         {
-            "name": "stopTimeLock",
-            "args": [],
+            "name": "generateNFT",
+            "args": [
+                "string",
+                "string"
+            ],
             "amountLimit": [],
             "description": ""
         },
@@ -115,6 +74,37 @@
                 "string",
                 "string"
             ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "approve",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "balanceOf",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "ownerOf",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "mint",
+            "args": [],
             "amountLimit": [{
                 "token": "*",
                 "val": "unlimited"
@@ -122,45 +112,23 @@
             "description": ""
         },
         {
-            "name": "setVaultPercentage",
+            "name": "updateBondInfo",
             "args": [
-                "string",
                 "string"
             ],
             "amountLimit": [],
             "description": ""
         },
         {
-            "name": "updateAllocation",
-            "args": [
-                "string",
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "addPool",
-            "args": [
-                "string",
-                "string",
-                "string",
-                "string",
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "updateAllPools",
+            "name": "updateAuctionSlot",
             "args": [],
             "amountLimit": [],
             "description": ""
         },
         {
-            "name": "stake",
+            "name": "fuse",
             "args": [
+                "string",
                 "string",
                 "string"
             ],
@@ -171,66 +139,22 @@
             "description": ""
         },
         {
-            "name": "unstake",
+            "name": "claimBond",
             "args": [
-                "string",
                 "string"
             ],
-            "amountLimit": [{
-                "token": "*",
-                "val": "unlimited"
-            }],
+            "amountLimit": [],
             "description": ""
         },
         {
-            "name": "processProducerBonus",
+            "name": "approveAll",
             "args": [],
             "amountLimit": [],
             "description": ""
         },
         {
-            "name": "setProducerCoef",
-            "args": ["string"],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "distributeProducerBonus",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "checkUserWithdrawals",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "claim",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "vote",
-            "args": [
-                "string"
-            ],
-            "amountLimit": [],
-            "description": ""
-        },
-        {
-            "name": "unvote",
-            "args": [
-                "string"
-            ],
+            "name": "version",
+            "args": [],
             "amountLimit": [],
             "description": ""
         }

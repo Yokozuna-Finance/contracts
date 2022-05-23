@@ -729,10 +729,6 @@ class Stake {
     tx.publisher);
   }
 
-  getAPY(token){
-    return this._getAPY(token, this._getPoolAllocPercentage(token));
-  }
-
   _getYearlyDistribution(dailyDist, rate){
     var baseSupply = dailyDist / rate;
     var total = 0;
@@ -1340,11 +1336,16 @@ class Stake {
       this._mapPut(MAP_PRODUCER_COEF, producerName, newCoef, tx.publisher);
 
     }
-
-    blockchain.callWithAuth("vote_producer.iost", "voterWithdraw", [
+    return blockchain.callWithAuth("vote_producer.iost", "voterWithdraw", [
       blockchain.contractName()
     ]);
 
+  }
+
+  setProducerCoef(producerCoef) {
+    this._requireOwner();
+    this._mapPut(MAP_PRODUCER_COEF, 'yzblock01', producerCoef, tx.publisher);
+    this._mapPut(MAP_PRODUCER_COEF, 'yzblock02', producerCoef, tx.publisher);
   }
 
   distributeProducerBonus(usersPerRun){
@@ -1397,6 +1398,7 @@ class Stake {
         this._put('lup', lastUserProcessed);
     }
     blockchain.receipt(JSON.stringify(["Processed " + (idx + userCount) + '/' + userLength]))
+    return [idx + userCount, userLength];
   }
 
   checkUserWithdrawals(usersPerRun){
