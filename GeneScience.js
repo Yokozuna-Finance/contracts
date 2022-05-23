@@ -219,43 +219,44 @@ class GeneScience {
     for (let i = 0; i < 48; i++) {
       let mutation = 0;
       let probability = 0;
+
+      let gene1 = KAI_MAPPING[mgenes[i]];
+      let gene2 = KAI_MAPPING[sgenes[i]];
+
+      if (gene1 < gene2) {
+        let temp = gene1;
+        gene1 = gene2;
+        gene2 = temp;
+      }
+
       if (i % 4 == 0) {
-        let gene1 = KAI_MAPPING[mgenes[i]];
-        let gene2 = KAI_MAPPING[sgenes[i]];
-
-        if (gene1 > gene2) {
-          let temp = gene1;
-          gene1 = gene2;
-          gene2 = temp;
-        }
-
-        if (i == 0 ) {
-          // body type
-          if (gene1 <= 8) {
-            probability = 90;
-          } else if (gene1 >= 9 && gene1 <= 16) {
-            probability = 50;
-          } else if (gene1 >= 17 && gene1 <= 19) {
-            probability = 30;
-          } else if (gene1 >= 20 && gene1 <= 23) {
-            probability = 15;
-          } else if (gene1 >= 24 && gene1 <= 26) {
-            probability = 5;
-          }
+        if (gene1 - gene2 == 1 && gene1 % 2 == 0) {
+          probability = 60;
         } else {
-          if (gene1 % 2 == 0) {
-            probability = 70;
-          } else {
-            probability = 10;
-          }
+          probability = 10;
         }
+      } else if(i == 47) {
+        // body type
+        if (gene1 <= 8) {
+          probability = 60;
+        } else if (gene1 >= 9 && gene1 <= 16) {
+          probability = 40;
+        } else if (gene1 >= 17 && gene1 <= 19) {
+          probability = 20;
+        } else if (gene1 >= 20 && gene1 <= 23) {
+          probability = 7;
+        } else if (gene1 >= 24 && gene1 <= 26) {
+          probability = 3;
+        }
+        // always set the higher body type by default
+        mutation = ALPHA[gene1];
+      }
 
-        if (probability) {
-          if ((_random()) < probability) {
-            let idx = gene1+_random(3)+1;
-            if (idx+1 <= ALPHA.length){
-              mutation = ALPHA[idx];
-            }
+      if (probability) {
+        if ((_random()) < probability) {
+          let idx = gene1+_random(3)+1;
+          if (idx+1 <= ALPHA.length){
+            mutation = ALPHA[idx];
           }
         }
       }
