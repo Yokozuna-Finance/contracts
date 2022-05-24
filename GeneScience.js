@@ -169,7 +169,8 @@ class GeneScience {
 
         let gt = ab1 > ab2 ? ab1 : ab2;
         let lt = ab1 < ab2 ? ab1 : ab2;
-        let multiplier = [1,1,1,1,1,1.5,1.5,1.5,1.75,2];
+        lt = Math.ceil(lt / 2);
+        let multiplier = [1,1,1,1,1,1,1,1,1.25,1.5];
         let attr = gt + _random(lt);
         attr = Math.ceil(multiplier[_random(multiplier.length)] * attr);
         res.push(attr.toString());

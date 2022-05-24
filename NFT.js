@@ -255,7 +255,7 @@ class NFT {
       } else if (rand >= 90 && rand <= 99) {
         multiplier = 0.25;
       } 
-      power = fuse * multiplier;
+      power = Math.ceil(fuse * multiplier);
     }
     
 
@@ -404,7 +404,7 @@ class NFT {
 
     let genes = '';
     for (let i = 0; i < 48; i++) {
-      genes += ALPHA[_random(6)];
+      genes += ALPHA[_random(4)];
     }
 
     let attributes = (_random(30) + 1).toString() + '-' + 
