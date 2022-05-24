@@ -112,13 +112,22 @@ class Snapshot:
         self._setup_account()
         self._setup_server()
 
-        #users = ['admin', 'testnft']
         for user in users:
-            tx = self.iost.create_call_tx(config('NFT_CONTRACT_ID'), 'sendNFT', user)
-            response = self._execute_tx(tx)
-            for receipt in response.receipts:
-                print(receipt.func_name, receipt.content)
+            try: 
+                tx = self.iost.create_call_tx(config('NFT_CONTRACT_ID'), 'sendNFT', user)
+                response = self._execute_tx(tx)
+                for receipt in response.receipts:
+                    print(receipt.func_name, receipt.content)
+            except TimeoutError as err:
+                print ('Error:', err)
+                timedout_users.append([user])
+
             print('\n')
+
+        if timedout_users:
+            with open('{}.csv'.format('timedout_users'), 'w') as f: 
+                write = csv.writer(f) 
+                write.writerows(timedout_users)
 
         print('Airdrop distribution done!')
 
