@@ -1,4 +1,4 @@
-const YOKOZUNA_TOKEN_SYMBOL = '<fix me>';
+const YOKOZUNA_TOKEN_SYMBOL = 'zuna';
 const ALPHA = '123456789abcdefghijkmnopqrstuvwx';
 const YEAR_TO_DAYS = 365;
 const TOKEN_PRECISION = 6;
