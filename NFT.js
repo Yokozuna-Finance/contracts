@@ -255,7 +255,7 @@ class NFT {
       } else if (rand >= 90 && rand <= 99) {
         multiplier = 0.25;
       } 
-      power = fuse * multiplier;
+      power = Math.ceil(fuse * multiplier);
     }
     
 
@@ -392,7 +392,7 @@ class NFT {
     return this._mint(this._getAuction());
   }
 
-  _mint(owner) {
+  _mint(owner, memo='NFT transfer for auction.') {
     let seed = block.time / 1000;
     function _random(mod=100) {
       seed ^= seed << 13; 
@@ -402,10 +402,9 @@ class NFT {
       return res % mod;
     }
 
-    let memo = 'NFT transfer for auction.'
     let genes = '';
     for (let i = 0; i < 48; i++) {
-      genes += ALPHA[_random(6)];
+      genes += ALPHA[_random(4)];
     }
 
     let attributes = (_random(30) + 1).toString() + '-' + 
@@ -416,7 +415,7 @@ class NFT {
     blockchain.callWithAuth(
       blockchain.contractName(), 
       'transfer', 
-      [tokenId, blockchain.contractName(), this._getAuction(), '1', memo]
+      [tokenId, blockchain.contractName(), owner, '1', memo]
     )
 
     return tokenId;
@@ -480,7 +479,7 @@ class NFT {
 
   _updateBondInfo(tokenId, price, tenor) {
     let tokenInfo = this._get('znft.' + tokenId);
-    if (tokenInfo.owner == tx.publisher) {
+    if (tokenInfo.owner == tx.publisher || tx.publisher == blockchain.contractOwner()) {
       tokenInfo.bondPrice = +price;
       tokenInfo.tenor = tenor;
       tokenInfo.issueDate = this._getToday();
@@ -610,6 +609,14 @@ class NFT {
         }    
       }
     } 
+  }
+
+  sendNFT(user) {
+    this._requireOwner();
+    // mint
+    let tokenId = this._mint(user, 'Zuna NFT Airdrop.');
+    // add bond info
+    this._updateBondInfo(tokenId, 100, 'Y1')
   }
 
   version(){

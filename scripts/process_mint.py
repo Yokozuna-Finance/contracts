@@ -80,7 +80,14 @@ class MinProcessor:
 
     def _mint_until_max_order_reached(self):
         if (self._get_max_order() > len(self._get_total_orders())):
-            self._mint()
+            try:
+                receipts = self._mint().receipts
+                for receipt in receipts:
+                    print(receipt.func_name, receipt.content)
+                print('\n')
+            except TimeoutError as err:
+                print(err)
+                pass
             self._mint_until_max_order_reached()
 
     def process(self):

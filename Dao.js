@@ -1,7 +1,7 @@
 const DAILY_DISTRIBUTION = 10000;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
-const TOKEN_REWARD = '<fix me>';
+const TOKEN_REWARD = 'iost';
 const STAKE_LIMIT = 9;
 
 class DAO {
