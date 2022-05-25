@@ -112,6 +112,7 @@ class Snapshot:
         self._setup_account()
         self._setup_server()
 
+        timedout_users = []
         for user in users:
             try: 
                 tx = self.iost.create_call_tx(config('NFT_CONTRACT_ID'), 'sendNFT', user)
