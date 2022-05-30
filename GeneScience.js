@@ -232,22 +232,22 @@ class GeneScience {
 
       if (i % 4 == 0) {
         if (gene1 - gene2 == 1 && gene1 % 2 == 0) {
-          probability = 60;
+          probability = 50;
         } else {
           probability = 10;
         }
       } else if(i == 47) {
         // body type
         if (gene1 <= 8) {
-          probability = 60;
+          probability = 50;
         } else if (gene1 >= 9 && gene1 <= 16) {
-          probability = 40;
+          probability = 25;
         } else if (gene1 >= 17 && gene1 <= 19) {
-          probability = 20;
+          probability = 13;
         } else if (gene1 >= 20 && gene1 <= 23) {
-          probability = 7;
+          probability = 6;
         } else if (gene1 >= 24 && gene1 <= 26) {
-          probability = 3;
+          probability = 2;
         }
         // always set the higher body type by default
         mutation = ALPHA[gene1];
@@ -255,7 +255,7 @@ class GeneScience {
 
       if (probability) {
         if ((_random()) < probability) {
-          let idx = gene1+_random(3)+1;
+          let idx = gene1 + 1;
           if (idx+1 <= ALPHA.length){
             mutation = ALPHA[idx];
           }

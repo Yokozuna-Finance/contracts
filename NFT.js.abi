@@ -153,6 +153,12 @@
             "description": ""
         },
         {
+            "name": "clearDeadAddrNFTLog",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "sendNFT",
             "args": [
                 "string"

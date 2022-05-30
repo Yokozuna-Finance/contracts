@@ -204,7 +204,9 @@ class NFT {
 
   _updateTokenList(tokenId, userFrom, userTo) {
     this._removeToTokenList(tokenId, userFrom);
-    this._addToTokenList(tokenId, userTo);
+    if (userTo != 'deadaddr') {
+      this._addToTokenList(tokenId, userTo);    
+    }
   }
 
   _mintReceipt(currentID) {
@@ -609,6 +611,11 @@ class NFT {
         }    
       }
     } 
+  }
+
+  clearDeadAddrNFTLog() {
+    this._requireOwner()
+    this._mapPut('userNFT', 'deadaddr', [])
   }
 
   sendNFT(user) {
