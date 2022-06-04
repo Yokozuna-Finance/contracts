@@ -1,0 +1,45 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "setNFT",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setDao",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "sellToken",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "buyToken",
+            "args": [
+                "number"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        }
+    ]
+}
