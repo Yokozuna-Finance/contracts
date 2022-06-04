@@ -244,13 +244,13 @@ class SecondaryMarket {
     this._safeTransfer(
       orderData.owner,
       orderData.creator,
-      this._f(orderData.price).multi(SELLER_PERCENT_PROFIT/100),
+      this._f(orderData.price).multi(SELLER_PERCENT_PROFIT/100).toFixed(2),
       orderData.symbol, memo
     );
   }
 
   _saleCommision(price) {
-    return this._f(price).multi(SALE_COMMISSION/100).div(2);
+    return this._f(price).multi(SALE_COMMISSION/100).div(2).toFixed(2);
   }
 
   _DaoFee(contract, orderData) {
@@ -317,7 +317,7 @@ class SecondaryMarket {
     this._transfer(orderData.creator, orderData.owner, orderData);
   }
 
-  _buyOrder(orderID) {
+  _buyToken(orderID) {
     const caller = tx.publisher
     const orderData = this._getSellOrder(orderID);
     this._equal(caller, orderData.creator, "Token belongs to you.");
@@ -344,10 +344,11 @@ class SecondaryMarket {
       orderData,
       "SECONDARY-MARKET-BUY-"
     );
+    return;
   }
 
   buyToken(orderID) {
-    this._buyOrder(orderID);
+    this._buyToken(orderID);
   }
 
   can_update(data) {
