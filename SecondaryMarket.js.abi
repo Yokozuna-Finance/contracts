@@ -17,6 +17,13 @@
             "amountLimit": []
         },
         {
+            "name": "setMaxOrder",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
             "name": "sellToken",
             "args": [
                 "string",

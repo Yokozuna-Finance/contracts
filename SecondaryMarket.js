@@ -6,7 +6,9 @@ const SALE_COMMISSION = 20;
 
 class SecondaryMarket {
 
-  init() {}
+  init() {
+    this._setMaxOrder();
+  }
 
   _requireAuth(account) {
     if (!blockchain.requireAuth(account, "active")) {
@@ -119,8 +121,15 @@ class SecondaryMarket {
     this._setUserData(account, userData);
   }
 
-  _addUserBuySell(account, orderId) {
+  _addUserBuySell(account, orderId, checkOrderLimit=false) {
     const userData = this._getUserData(account);
+    if (checkOrderLimit) {
+      this._equal(
+        this._checkOrderLimit(userData),
+        true,
+        "Maximum number of sell orders have been reached"
+      )
+    }
     userData.sellOrders.push(orderId);
     userData.sellOrderCount ++;
     this._setUserData(account, userData);
@@ -215,12 +224,20 @@ class SecondaryMarket {
     this._put(key, contractID);
   }
 
+  _setMaxOrder(maxNumber=5) {
+    this._put("MAXORDERCOUNT", maxNumber);
+  }
+
   setNFT(contractID) {
     this._setContract(contractID, NFT_CONTRACT_ID);
   }
 
   setDao(contractID) {
     this._setContract(contractID, DAO_CONTRACT_ID);
+  }
+
+  setMaxOrder(maxNumber) {
+    this._setMaxOrder(maxNumber);
   }
 
   _setSellOrder(orderId, orderData){
@@ -247,6 +264,11 @@ class SecondaryMarket {
       this._f(orderData.price).multi(SELLER_PERCENT_PROFIT/100).toFixed(2),
       orderData.symbol, memo
     );
+  }
+
+  _checkOrderLimit(userData) {
+    if(userData.sellOrderCount >= this._get("MAXORDERCOUNT", 0, 0)) return true;
+    return false;
   }
 
   _saleCommision(price) {
@@ -288,6 +310,7 @@ class SecondaryMarket {
   _sellToken(tokenID, price) {
     const tokenInfo = this._getTokenInfo(tokenID, tx.publisher);
     const orderId = this._getOrderId();
+    const userData = 
     this._addOrderCount(1);
     const owner = blockchain.contractName();
     const orderData = {
@@ -307,7 +330,7 @@ class SecondaryMarket {
       orderTime : block.time,
     }
     this._setSellOrder(orderId, orderData);
-    this._addUserBuySell(orderData.creator, orderData.orderId);
+    this._addUserBuySell(orderData.creator, orderData.orderId, true);
     this._addUserBuySell(orderData.owner, orderData.orderId);
     return orderData;
   }
