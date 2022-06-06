@@ -167,6 +167,14 @@
             "description": ""
         },
         {
+            "name": "setNFTRankings",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "version",
             "args": [],
             "amountLimit": [],
