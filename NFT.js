@@ -435,7 +435,7 @@ class NFT {
       ranking.splice(idx1, 1);
     }
 
-    let idx2 = ranking.indexOf({id: nft2.id, pp: nft2.pushPower})
+    let idx2 = ranking.indexOf({id: nft2.id, pp: nft2.pushPower, owner:nft1.owner})
     if (idx2 !== -1) {
       ranking.splice(idx2, 1);
     }

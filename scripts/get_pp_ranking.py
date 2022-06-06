@@ -146,7 +146,7 @@ class GetPushPowerRanking:
                 if nft_info['owner'] == 'deadaddr':
                     deadaddr_nft.append([nft_info['id'],])
                 else:
-                    nfts.append({'id': nft_info['id'], 'pp': int(nft_info['pushPower'])})
+                    nfts.append({'id': nft_info['id'], 'pp': int(nft_info['pushPower']), 'owner': nft_info['owner']})
 
                 if nfts:
                     try:
@@ -161,9 +161,9 @@ class GetPushPowerRanking:
         if deadaddr_nft:
             self._add_dead_nfts(deadaddr_nft)
 
-        print(">>>>",nfts)
-        self._update_config(start, nfts)
-        self._save_ranking(nfts)
+        if nfts:
+            self._update_config(start, nfts)
+            self._save_ranking(nfts)
 
 
     def _save_ranking(self, ranking):
@@ -174,5 +174,6 @@ class GetPushPowerRanking:
 
 if __name__ ==  "__main__":
     
+    print('ENV:', ENV)
     pp_rankings = GetPushPowerRanking()
     pp_rankings.get_nfts()
