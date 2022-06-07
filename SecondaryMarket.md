@@ -14,7 +14,7 @@
     ```
 
 * Set the Dao contract
-    > Note: There will be 20% commision fee the 10% goes to Dao contract and the other 10% goes to dead address for every successful sold
+    > Note: There will be 20% commision fee, the 10% goes to Dao contract and the other 10% goes to dead address for every NFT sold
 
     ```
     iwallet --account admin -v call <Secondary Market Contract>  setDao '["<Dao Contract>"]' -s 18.209.137.246:30002
