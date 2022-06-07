@@ -225,6 +225,7 @@ class SecondaryMarket {
   }
 
   _setMaxOrder(maxNumber=5) {
+    this._requireOwner();
     this._put("MAXORDERCOUNT", maxNumber);
   }
 
