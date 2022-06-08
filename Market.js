@@ -4,7 +4,7 @@ const TOKEN_SYMBOL = 'zuna';
 const SELLER_PERCENT_PROFIT = 80;
 const SALE_COMMISSION = 20;
 
-class SecondaryMarket {
+class Market {
 
   init() {
     this._setMaxOrder();
@@ -379,4 +379,4 @@ class SecondaryMarket {
     return blockchain.requireAuth(blockchain.contractOwner(), "active");
   }
 }
-module.exports = SecondaryMarket;
+module.exports = Market;
