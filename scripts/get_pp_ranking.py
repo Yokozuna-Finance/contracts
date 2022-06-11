@@ -20,8 +20,9 @@ class GetPushPowerRanking:
         self.connection = sqlite3.connect("deadnft.db")
         self.cursor = self.connection.cursor()
         self.has_config = False
-        self._setup_account()
-        self._setup_server();
+        #self._setup_account()
+        #self._setup_server();
+        self.staked_nfts = {}
         
     def _setup_server(self):
         self.iost = IOST(
@@ -121,12 +122,40 @@ class GetPushPowerRanking:
 
         return new_rank
 
+
+    def _get_staked_user_list(self):
+        return self._get_storage_data(config('STAKE_CONTRACT_ID'), 'userBalanceList')
+
+
+    def _get_staked_nft_list(self, user):
+        return self._get_storage_data(config('DAO_CONTRACT_ID'), 'staked.{}'.format(user), '')
+
+
+    def get_staked_nft(self):
+        staked_users = self._get_staked_user_list();
+
+        for user in staked_users:
+            self.staked_nfts[user] = self._get_staked_nft_list(user)
+
+    def get_nft_owner(self, nft_id):
+        for user in self.staked_nfts.keys():
+            if self.staked_nfts[user] and nft_id in self.staked_nfts[user]:
+                print(nft_id,':',user)
+                return user
+        return None
+
     def get_nfts(self):
         deadaddr_nft = []
-        config = self._get_config()
-        start = config['start']
+        app_config = self._get_config()
+        start = app_config['start']
+        print(app_config)
 
-        nfts = self.get_updated_rank(config);
+        nfts = self.get_updated_rank(app_config);
+
+        #for nft in nfts:
+        #    user = self.get_nft_owner(nft['id'])
+        #    if user:
+        #        nft['owner'] = user
 
         while True:
             nft_id = '%010d' % start;
@@ -158,6 +187,7 @@ class GetPushPowerRanking:
                 nfts = nfts[:40]
             start += 1
 
+
         if deadaddr_nft:
             self._add_dead_nfts(deadaddr_nft)
 
@@ -171,9 +201,31 @@ class GetPushPowerRanking:
         response = self._execute_tx(tx)
 
 
+    def get_nft_users(self):
+        app_config = self._get_config()
+
+        new_rankings = []
+        self.get_staked_nft();
+
+        for rank in app_config['rankings']:
+            if rank['owner'] is None or rank['owner'] == config('DAO_CONTRACT_ID'):
+                user = self.get_nft_owner(rank['id'])
+                rank['owner'] = user
+            new_rankings.append(rank)
+
+        print(new_rankings)
+
+
+    def update_ranking(self, ranking):
+        app_config = self._get_config();
+
+        self._update_config(app_config['start'], ranking)
+
 
 if __name__ ==  "__main__":
     
     print('ENV:', ENV)
     pp_rankings = GetPushPowerRanking()
     pp_rankings.get_nfts()
+    # pp_rankings.get_nft_users()
+    # pp_rankings.update_ranking()
