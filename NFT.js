@@ -423,6 +423,29 @@ class NFT {
     return tokenId;
   }
 
+  _getPPRanking(){
+    return this._get('rk', [])
+  }
+
+  _updatePPRanking(arr, nft1, nft2){
+    let ranking = this._getPPRanking();
+
+    let idx1 = ranking.indexOf({id: nft1.id, pp: nft1.pushPower})
+    if (idx1 !== -1) {
+      ranking.splice(idx1, 1);
+    }
+
+    let idx2 = ranking.indexOf({id: nft2.id, pp: nft2.pushPower, owner:nft1.owner})
+    if (idx2 !== -1) {
+      ranking.splice(idx2, 1);
+    }
+
+    ranking.push(arr)
+    let newRanking = ranking.sort((a,b) => b.pp - a.pp );
+    newRanking = newRanking.slice(0, 20)
+    this._put('rk', newRanking)
+  }
+
   _fuse(nft1, nft2, owner, tenor) {
     // generate nft by breeding
     let mutated_gene = blockchain.call(
@@ -461,6 +484,7 @@ class NFT {
         [tokenId, blockchain.contractName(), owner, '1', memo]
     )
     this._updateBondInfo(tokenId, bondPrice, tenor)
+    this._updatePPRanking({id: tokenId, pp: pushP}, nft1, nft2);
     return tokenId;
   }
 
@@ -624,6 +648,12 @@ class NFT {
     let tokenId = this._mint(user, 'Zuna NFT Airdrop.');
     // add bond info
     this._updateBondInfo(tokenId, 100, 'Y1')
+  }
+
+  setNFTRankings(arr) {
+    this._requireOwner();
+    arr = JSON.parse(arr)
+    this._put('rk', arr);
   }
 
   version(){
