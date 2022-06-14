@@ -20,8 +20,8 @@ class GetPushPowerRanking:
         self.connection = sqlite3.connect("deadnft.db")
         self.cursor = self.connection.cursor()
         self.has_config = False
-        #self._setup_account()
-        #self._setup_server();
+        self._setup_account()
+        self._setup_server();
         self.staked_nfts = {}
         
     def _setup_server(self):
@@ -51,8 +51,12 @@ class GetPushPowerRanking:
         return receipt
 
     def _add_dead_nfts(self, deadnfts):
-        self.cursor.executemany("insert into deadnft values (?)", deadnfts)
-        self.connection.commit()
+        try:
+            self.cursor.executemany("insert into deadnft values (?)", deadnfts)
+            self.connection.commit()
+        except:
+            print(deadnfts)
+            pass
 
     def _get_storage_data(self, contract_id, key, field=''):
         resp = requests.post(
@@ -229,3 +233,5 @@ if __name__ ==  "__main__":
     pp_rankings.get_nfts()
     # pp_rankings.get_nft_users()
     # pp_rankings.update_ranking()
+    # pp_rankings.get_staked_nft()
+    # pp_rankings.get_nft_owner('0000041706')
