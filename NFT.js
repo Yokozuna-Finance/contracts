@@ -485,7 +485,7 @@ class NFT {
   _updatePPRanking(arr, nft1, nft2){
     let ranking = this._getPPRanking();
 
-    let idx1 = ranking.indexOf({id: nft1.id, pp: nft1.pushPower})
+    let idx1 = ranking.indexOf({id: nft1.id, pp: nft1.pushPower, owner:nft1.owner})
     if (idx1 !== -1) {
       ranking.splice(idx1, 1);
     }
@@ -539,7 +539,7 @@ class NFT {
         [tokenId, blockchain.contractName(), owner, '1', memo]
     )
     this._updateBondInfo(tokenId, bondPrice, tenor)
-    this._updatePPRanking({id: tokenId, pp: pushP}, nft1, nft2);
+    this._updatePPRanking({id: tokenId, pp: pushP, owner: tx.publisher}, nft1, nft2);
     return tokenId;
   }
 
