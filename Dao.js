@@ -216,6 +216,35 @@ class DAO {
     return this._mapGet("userInfo", who, null);
   }
 
+  _addUserStakeLog() {
+    const stakedUser = this._get("stakedUser", []);
+
+    if (stakedUser.indexOf(tx.publisher) < 0) {
+      stakedUser.push(tx.publisher);
+    }
+
+    this._put("stakedUser", stakedUser, tx.publisher);
+  }
+
+  _removeUserStakeLog() {
+    const stakedNFT = this._getUserStakedToken() 
+    const stakedUser = this._get("stakedUser", []);
+    const stakedIdx = stakedUser.indexOf(tx.publisher)
+
+    if (!stakedNFT){
+      if (stakedIdx > -1) {
+        stakedUser.splice(stakedIdx, 1)
+      }
+      this._put("stakedUser", stakedUser, tx.publisher);
+    }
+  }
+
+  setStakeUsers(arr) {
+    this._requireOwner();
+    arr = JSON.parse(arr)
+    this._put('stakedUser', arr);
+  }
+
   stake(tokenId) {
     this._requireAuth(tx.publisher);
     const nftInfo = this._getTokenDetails(tokenId);
@@ -264,6 +293,7 @@ class DAO {
     userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
 
     this._setUserInfo(tx.publisher, userInfo);
+    this._addUserStakeLog();
     pool.total = new BigNumber(pool.total).plus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
     this._setPoolObj(pool);
     blockchain.receipt(JSON.stringify(["deposit", tokenId, nftInfo.pushPower]));
@@ -311,6 +341,7 @@ class DAO {
 
     pool.total = new BigNumber(pool.total).minus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
     this._setPoolObj(pool);
+    this._removeUserStakeLog();
 
     // transfer NFT to user
     blockchain.callWithAuth(

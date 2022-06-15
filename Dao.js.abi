@@ -75,6 +75,14 @@
             "description": ""
         },
         {
+            "name": "setStakeUsers",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"
