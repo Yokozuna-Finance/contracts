@@ -1,0 +1,40 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "isLocked",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "setDAO",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "drawWinners",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
+            "name": "reset",
+            "args": [],
+            "amountLimit": [],
+            "description": ""
+        }
+    ]
+}
