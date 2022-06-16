@@ -383,7 +383,7 @@ if __name__ ==  "__main__":
 
     pp_rankings = GetPushPowerRanking()
     # 
-    if args.action == 'distribute':
+    if args.action == 'update_ranking':
     # pp_rankings.get_nft_users()
         rankings = [{'id': '0000046329', 'pp': 34467725, 'owner': 'h6hsp44rs3w'}, 
             {'id': '0000043731', 'pp': 34201444, 'owner': 'h6hsp44rs3w'}, 
