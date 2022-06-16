@@ -15,6 +15,11 @@ from pyost.signature import KeyPair
 
 ENV = 'prod'
 
+parser = argparse.ArgumentParser(
+    prog = 'get_pp_ranking.py',
+    description = '',
+)
+
 class GetPushPowerRanking:
     def __init__(self):
         self.connection = sqlite3.connect("deadnft.db")
@@ -367,10 +372,67 @@ class GetPushPowerRanking:
 if __name__ ==  "__main__":
     
     print('ENV:', ENV)
+
+    parser.add_argument('-a', '--action',
+        help='get the user list or process airdrop distibution',
+        default='get_nfts',
+        choices=['get_nfts', 'update_ranking']
+    )
+
+    args = parser.parse_args()
+
     pp_rankings = GetPushPowerRanking()
-    pp_rankings.get_nfts()
+    # 
+    if args.action == 'distribute':
     # pp_rankings.get_nft_users()
-    # pp_rankings.update_ranking(rankings)
+        rankings = [{'id': '0000046329', 'pp': 34467725, 'owner': 'h6hsp44rs3w'}, 
+            {'id': '0000043731', 'pp': 34201444, 'owner': 'h6hsp44rs3w'}, 
+            {'id': '0000046273', 'pp': 24160263, 'owner': 'topgun'}, 
+            {'id': '0000040502', 'pp': 10732308, 'owner': 'clink_4x24r'}, 
+            {'id': '0000043996', 'pp': 8767838, 'owner': 'topgun'}, 
+            {'id': '0000037649', 'pp': 4295352, 'owner': 'clink_4x24r'}, 
+            {'id': '0000037162', 'pp': 3712080, 'owner': 'clink_4x24r'}, 
+            {'id': '0000044133', 'pp': 3665554, 'owner': 'clink_x9wak'}, 
+            {'id': '0000041980', 'pp': 2644338, 'owner': 'clink_4x24r'}, 
+            {'id': '0000019191', 'pp': 1728159, 'owner': 'clink_xvezy'}, 
+            {'id': '0000044549', 'pp': 1337481, 'owner': 'clink_4x24r'}, 
+            {'id': '0000042270', 'pp': 1171210, 'owner': 'clink_x9wak'}, 
+            {'id': '0000026859', 'pp': 1069072, 'owner': 'chan_16744'}, 
+            {'id': '0000044319', 'pp': 1008652, 'owner': 'clink_37yg7'}, 
+            {'id': '0000037004', 'pp': 853224, 'owner': 'clink_4x24r'}, 
+            {'id': '0000036700', 'pp': 687404, 'owner': 'clink_4x24r'}, 
+            {'id': '0000045043', 'pp': 668602, 'owner': 'kotarawiost'}, 
+            {'id': '0000040032', 'pp': 598258, 'owner': 'clink_q7u33'}, 
+            {'id': '0000040809', 'pp': 528936, 'owner': 'clink_0eaum'}, 
+            {'id': '0000042138', 'pp': 500162, 'owner': 'clink_x9wak'}, 
+            {'id': '0000011003', 'pp': 439180, 'owner': 'chan_16744'}, 
+            {'id': '0000030894', 'pp': 401514, 'owner': 'clink_0eaum'}, 
+            {'id': '0000013182', 'pp': 355900, 'owner': 'iostpty'}, 
+            {'id': '0000040831', 'pp': 331238, 'owner': 'clink_0eaum'}, 
+            {'id': '0000036279', 'pp': 315772, 'owner': 'kotarawiost'}, 
+            {'id': '0000041332', 'pp': 310140, 'owner': 'golfweekp'}, 
+            {'id': '0000040828', 'pp': 270480, 'owner': 'clink_0eaum'}, 
+            {'id': '0000041557', 'pp': 255127, 'owner': 'iostdaleast'}, 
+            {'id': '0000028415', 'pp': 225477, 'owner': 'clink_0eaum'}, 
+            {'id': '0000025866', 'pp': 207171, 'owner': 'clink_0eaum'}, 
+            {'id': '0000028015', 'pp': 203803, 'owner': 'clink_qojng'}, 
+            {'id': '0000027618', 'pp': 200140, 'owner': 'clink_0eaum'}, 
+            {'id': '0000042493', 'pp': 199794, 'owner': 'mt81o_3348'}, 
+            {'id': '0000040727', 'pp': 196848, 'owner': 'clink_0eaum'}, 
+            {'id': '0000025855', 'pp': 190848, 'owner': 'clink_0eaum'}, 
+            {'id': '0000025600', 'pp': 179478, 'owner': 'clink_x9wak'}, 
+            {'id': '0000030434', 'pp': 173050, 'owner': 'z15lc_2827'}, 
+            {'id': '0000043636', 'pp': 161286, 'owner': 'azmayyy'}, 
+            {'id': '0000041079', 'pp': 137652, 'owner': 'iostpty'}, 
+            {'id': '0000032061', 'pp': 134088, 'owner': 'y6809_2806'}]
+        pp_rankings.update_ranking(rankings)
+    else:
+        pp_rankings.get_nfts()
+
     # pp_rankings.get_staked_nft()
     # pp_rankings.get_nft_owner('0000041706')
     # pp_rankings.get_user('0000043996')
+
+    # pp_rankings.get_user('0000046329')
+    # pp_rankings.get_user('0000046273')
+
