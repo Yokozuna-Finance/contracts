@@ -485,12 +485,16 @@ class NFT {
   _updatePPRanking(arr, nft1, nft2){
     let ranking = this._getPPRanking();
 
-    let idx1 = ranking.indexOf({id: nft1.id, pp: nft1.pushPower, owner:nft1.owner})
+    let idx1 = ranking.findIndex(function(arr){
+        return arr.id = nft1.id
+    })
     if (idx1 !== -1) {
       ranking.splice(idx1, 1);
     }
 
-    let idx2 = ranking.indexOf({id: nft2.id, pp: nft2.pushPower, owner:nft1.owner})
+    let idx2 = ranking.findIndex(function(arr){
+        return arr.id = nft2.id
+    })
     if (idx2 !== -1) {
       ranking.splice(idx2, 1);
     }
