@@ -486,16 +486,16 @@ class NFT {
     let ranking = this._getPPRanking();
 
     let idx1 = ranking.findIndex(function(arr){
-        return arr.id = nft1.id
+      return arr.id == nft1.id
     })
-    if (idx1 !== -1) {
+    if (idx1 > -1) {
       ranking.splice(idx1, 1);
     }
 
     let idx2 = ranking.findIndex(function(arr){
-        return arr.id = nft2.id
+        return arr.id == nft2.id
     })
-    if (idx2 !== -1) {
+    if (idx2 > -1) {
       ranking.splice(idx2, 1);
     }
 
