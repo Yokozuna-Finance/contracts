@@ -226,12 +226,151 @@ class GetPushPowerRanking:
         self._update_config(app_config['start'], ranking)
 
 
+    def get_staked_users(self):
+        start = 1
+        staked_users = set()
+        while True:
+            nft_id = '%010d' % start;
+            rows = self.cursor.execute('select id from deadnft where id = ?', (nft_id,)).fetchall();
+            if not rows:
+                try:
+                    nft_info = self._get_nft(start)
+                    print(nft_info)
+                except Exception as err:
+                    print(err)
+                    print(nfts, start)
+                    break
+
+                if nft_info is None:
+                    break
+
+                staked_users.add(nft_info['owner'])
+            start += 1
+
+        print(list(staked_users))
+
+    def get_user(self, nft_id):
+        staked_users = [
+        'clink_ge2lh', 
+        '4vhik_2791', 
+        'iostpty', 
+        'metanyx', 
+        'cit8laq64rw', 
+        'r1hc7_2881', 
+        'sq1h5_2455', 
+        'yuuyuu911', 
+        'clink_4x24r', 
+        'pong_tawat2', 
+        'cb3000iost', 
+        'dear_me95', 
+        'clink_x9wak', 
+        'chan_80743', 
+        'landies', 
+        'kotarawiost', 
+        '24giLGvX6UhRc82JP5fajQF4adZD3aHNZFmF739vhoyD', 
+        'bakeryiost', 
+        'citg78bkb5s', 
+        'ymsbv_2787', 
+        'yuhei', 
+        '1thjx_2897', 
+        'chan_18247', 
+        'hufuck', 
+        'clink_cnn1c', 
+        'btoyw_2801', 
+        'yukiakari3', 
+        'cosmonautbe', 
+        'jaguar888', 
+        'clink_nbtf0', 
+        '1jvemrygoau', 
+        'shigemurar', 
+        'clink_j05wk', 
+        'i0st1151', 
+        'shehu5083', 
+        '_sgj876p0l9', 
+        'wynandbucks', 
+        '86_mh6xfm4m', 
+        'takeshi', 
+        'clink_8mfrq', 
+        'bunzcoin', 
+        'clink_09hzx', 
+        'zgs3w4k77hr', 
+        'msaiki', 
+        'clink_t0ojj',
+        'aadouyi', 
+        'ms_qlibuqhg', 
+        'clink_qvdff', 
+        'shotenpa33', 
+        'ms_dwtxf1hg', 
+        'chan_57488', 
+        'zerolife', 
+        'clink_yb9kk', 
+        'nteruth', 
+        'g8qlv_2309', 
+        'clink_fbzgf', 
+        'golfweekp', 
+        'z2yaj_2856', 
+        'clink_ad4zq', 
+        'dua02_2851', 
+        'ryuji', 
+        'clink_6qvka', 
+        'hooda1985', 
+        'ftakao2007', 
+        'iostdaleast', 
+        'cikara0410', 
+        '5hjdp_2831', 
+        'fwoav_2680', 
+        'nj3so_2933', 
+        'chan_30819', 
+        'clink_59bi1', 
+        'clink_4ziya', 
+        'bmierk', 
+        'chan_02894', 
+        'clink_0eaum', 
+        '30.01', 
+        'ms_xkinf8ty', 
+        'topgun', 
+        'h_hbb221', 
+        'tomoziost', 
+        'anuganu', 
+        'kongari', 
+        'toolswork', 
+        'metanyx1', 
+        '55', 
+        'ghwig28ngsx', 
+        'clink_o2ai2', 
+        'yydouyi', 
+        'cctviost', 
+        'h6hsp44rs3w', 
+        'adm1j5h6', 
+        'I0st1151', 
+        'cit8laq64rw ', 
+        '64ce2_2873', 
+        'chenlijun', 
+        'chan_05834', 
+        'clink_d4fvd', 
+        'clink_o13v7', 
+        'clink_vdmsh', 
+        'ivios', 
+        'm3ynpq4ixv9', 
+        '2exmww4bj38', 
+        'hoihoi2', 
+        'chan_16744']
+
+        for user in staked_users:
+            nfts = self._get_staked_nft_list(user)
+            print(user, nfts)
+            if nfts and nft_id in nfts:
+                print('!!!!', user)
+                return user
+        
+
 if __name__ ==  "__main__":
     
     print('ENV:', ENV)
     pp_rankings = GetPushPowerRanking()
     pp_rankings.get_nfts()
     # pp_rankings.get_nft_users()
-    # pp_rankings.update_ranking()
+    # pp_rankings.update_ranking(rankings)
     # pp_rankings.get_staked_nft()
     # pp_rankings.get_nft_owner('0000041706')
+    # pp_rankings.get_user('0000043996')
