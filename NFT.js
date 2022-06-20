@@ -223,11 +223,11 @@ class NFT {
     let multiplier = 1;
     if (fuse > 75000000) {
       if (rand >= 50 && rand <= 56) {
-        multiplier = 1.25;
+        multiplier = 1.01;
       } else if (rand >= 57 && rand <= 58) {
-        multiplier = 1.5;
+        multiplier = 1.05;
       } else if (rand == 59) {
-        multiplier = 1.75;
+        multiplier = 1.1;
       } else if (rand >= 60 && rand <= 74) {
         multiplier = 0.75;
       } else if (rand >= 75 && rand <= 99) {
@@ -237,27 +237,27 @@ class NFT {
       }
     } else if (fuse > 50000000) {
       if (rand >= 50 && rand <= 56) {
-        multiplier = 1.5;
+        multiplier = 1.1;
       } else if (rand >= 57 && rand <= 58) {
-        multiplier = 2;
+        multiplier = 1.2;
       } else if (rand == 59) {
-        multiplier = 2.5;
+        multiplier = 1.3;
       } else if (rand >= 60 && rand <= 74) {
         multiplier = 0.75;
       } else if (rand >= 75 && rand <= 99) {
         multiplier = 0.25;
-      } else if (rand >= 0 && rand <= 19) {
+      } else if (rand >= 0 && rand <= 24) {
         multiplier = 0.5;
       }
     } else if (fuse > 10000000) {
       if (rand >= 40 && rand <= 59) {
-        multiplier = 1.5;
+        multiplier = 1.25;
       } else if (rand >= 60 && rand <= 66) {
-        multiplier = 2;
+        multiplier = 1.5;
       } else if (rand >= 67 && rand <= 68) {
-        multiplier = 2.5;
+        multiplier = 1.75;
       } else if (rand == 69) {
-        multiplier = 3;
+        multiplier = 2;
       } else if (rand >= 70 && rand <= 89) {
         multiplier = 0.75;
       } else if (rand >= 90 && rand <= 99) {
