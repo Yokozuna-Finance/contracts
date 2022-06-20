@@ -63,18 +63,18 @@
     iwallet --account admin -v call <Auction Contract>  setDate '["0000000000000000000"]' -s 18.209.137.246:30002
     ```
 
-* In case you need to set the price of newly mint. Parameters: setPricePerMint['0.01']
-    > Note: Only the Auction contract owner is allowed to set the price per mint.
+* In case you need to set the fix price. Parameters: setFixPrice['25.00']
+    > Note: Only the Auction contract owner is allowed to set the fix price.
 
     ```
-    iwallet --account admin -v call <Auction Contract>  setPricePerMint '["0.03"]' -s 18.209.137.246:30002
+    iwallet --account admin -v call <Auction Contract>  setFixPrice '["25.00"]' -s 18.209.137.246:30002
     ```
 
-* In case you need to set the current price. Parameters: setPrice['1.00']
+* In case you need to set the current price. Parameters: setPriceMultiplier['0.01']
     > Note: Only the Auction contract owner is allowed to set the current price.
 
     ```
-    iwallet --account admin -v call <Auction Contract>  setPrice '["1.00"]' -s 18.209.137.246:30002
+    iwallet --account admin -v call <Auction Contract>  setPriceMultiplier '["0.01"]' -s 18.209.137.246:30002
     ```
 
 * In case you need to set the expiry. Parameters: setExpiry[3600] in seconds
