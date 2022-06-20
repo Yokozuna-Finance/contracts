@@ -8,8 +8,9 @@ const ORDER_BASE = 'ORDER.';
 const NFT_DATA_BASE = 'ORDER_DATA.';
 const DATE_KEY = 'DATE_STARTED';
 const PRICE_KEY = 'CURRENT_PRICE';
-const PRICE_PER_MINT_KEY = 'PRICE_PER_MINT';
+const FIX_PRICE = 'FIX_PRICE';
 const INITIAL_PRICE_KEY = 'INITIAL_PRICE';
+const PRICE_MULTIPLIER = 'PRICE_MULTIPLIER';
 const AUCTION_EXPIRY_KEY = 'EXPIRY';
 const UNCLAIMED_BASE = 'UNCLAIMED.';
 const MINTED_BASE = 'MINTED.';
@@ -294,8 +295,12 @@ class Auction {
     this._put(PRICE_KEY, this._f(price).toFixed(fixed));
   }
 
-  _setPricePerMint(price) {
-    this._put(PRICE_PER_MINT_KEY, price);
+  _setFixPrice(price=0) {
+    this._put(FIX_PRICE, this._f(price).toFixed(fixed));
+  }
+
+  _setPriceMultiplier(val) {
+    this._put(PRICE_MULTIPLIER, val);
   }
 
   _setMaxOrder(maxNumber=12) {
@@ -306,12 +311,16 @@ class Auction {
     return this._get(INITIAL_PRICE_KEY, 1, false);
   }
 
+  _getPriceMultiplier() {
+    return this._get(PRICE_MULTIPLIER, '0.01', true);
+  }
+
   _getPrice() {
     return this._get(PRICE_KEY, 1, true);
   }
 
-  _getPricePerMint() {
-    return this._get(PRICE_PER_MINT_KEY, 0, true);
+  _getFixPrice() {
+    return this._get(FIX_PRICE, '0.00', true);
   }
 
   _getDate() {
@@ -341,21 +350,13 @@ class Auction {
   }
 
   _checkPrice() {
-    let initialPrice = this._getInitialPrice();
-    if(!initialPrice) {
-      initialPrice = this._f("1.00").toFixed(fixed);
-      this._setInitialPrice(initialPrice);
-    }
-    let pricePerMint = this._getPricePerMint();
-    if (!pricePerMint) {
-	pricePerMint = this._f("0.00").toFixed(fixed);
-        this._setPricePerMint(pricePerMint);
-    }
-
-    const dailyPrice = initialPrice * (this._getDays()==0) ? 1: this._getDays();
-    const totalPrice = this._plus(dailyPrice, pricePerMint, fixed);
-    this._setPrice(totalPrice);
-    return this._getPrice();
+    const priceMultiplier = this._getPriceMultiplier();
+    const numOfDays = this._getDays() === 0 ? 1: this._getDays();
+    const dailyPrice = this._multi(priceMultiplier, numOfDays, fixed);
+    const totalPrice = this._getFixPrice() === '0.00'
+      ? this._plus(dailyPrice, this._getPrice(), fixed)
+      : this._f(this._getFixPrice()).toFixed(fixed);
+    return totalPrice;
   }
 
   _safeTransfer(from, to, amount, symbol, memo){
@@ -644,9 +645,15 @@ class Auction {
     return;
   }
 
-  setPricePerMint(price) {
+  setFixPrice(price) {
     this._requireOwner();
-    this._setPricePerMint(price);
+    this._setFixPrice(price);
+    return;
+  }
+
+  setPriceMultiplier(val) {
+    this._requireOwner();
+    this._setPriceMultiplier(val);
     return;
   }
 
