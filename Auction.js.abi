@@ -59,7 +59,14 @@
             "amountLimit": []
         },
         {
-            "name": "setPricePerMint",
+            "name": "setFixPrice",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setPriceMultiplier",
             "args": [
                 "string"
             ],
