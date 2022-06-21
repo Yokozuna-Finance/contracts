@@ -543,7 +543,8 @@ class NFT {
         [tokenId, blockchain.contractName(), owner, '1', memo]
     )
     this._updateBondInfo(tokenId, bondPrice, tenor)
-    this._updatePPRanking({id: tokenId, pp: pushP, owner: tx.publisher}, nft1, nft2);
+    const tokenInfo = this._get('znft.' + tokenId);
+    this._updatePPRanking({id: tokenId, pp: tokenInfo.pushPower, owner: tx.publisher}, nft1, nft2);
     return tokenId;
   }
 
