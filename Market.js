@@ -135,9 +135,11 @@ class Market {
     this._setUserData(account, userData);
   }
 
-  _addRemoveOrder(account, orderData) {
+  _addRemoveOrder(account, orderData, cancel=false) {
     const userData = this._getUserData(account);
-    userData.totalSell ++;
+    if (cancel === false) {
+      userData.totalSell ++;
+    }
     if(userData.sellOrderCount > 0){
       userData.sellOrderCount -= 1;
     }
@@ -373,6 +375,25 @@ class Market {
 
   buyToken(orderID) {
     this._buyToken(orderID);
+  }
+
+  cancelOrder(orderID) {
+    const caller = tx.publisher
+    const orderData = this._getSellOrder(orderID);
+    this._notEqual(caller, orderData.creator, "Invalid orderId.");
+    this._addRemoveOrder(orderData.creator, orderData, true);
+    this._addRemoveOrder(orderData.owner, orderData, true);
+    this._removeOrder(orderID);
+    blockchain.receipt(
+      JSON.stringify([orderData.nft.tokenId, 'Cancel order is successful.'])
+    );
+    this._transfer(
+      blockchain.contractName(),
+      caller,
+      orderData,
+      "SECONDARY-MARKET-CANCEL-"
+    );
+    return;
   }
 
   can_update(data) {
