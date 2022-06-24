@@ -26,3 +26,9 @@
     ```
     iwallet --account admin -v call <Market Contract>  setMaxOrder '[30]' -s 18.209.137.246:30002
     ```
+
+* Set the sale commission in Secondary Market contract. setSaleCommission '[percentageNumber]'
+    > Note: The sale commission should be in number format and only be executed by owner of the Auction contract.
+
+    ```
+    iwallet --account admin -v call <Market Contract>  setSaleCommission '[10]' -s 18.209.137.246:30002
