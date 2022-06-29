@@ -218,23 +218,48 @@ class NFT {
     return this._getStaticURL() + tokenId + '.png'
   }
 
-  _getPower(fuse, rand) {
+  _getValue(length){
+    let first = 50;
+    let second = 200;
+    let temp;
+    if (length > 28) {
+      return 20000000;
+    }
+    length -= 2
+    while (length > 0) {
+      temp = second;
+      second = first + second;
+      first = temp;
+      length -= 1;
+    }
+    return second-first;
+  }
+
+  _getPower(fuse, rand, gene, ability) {
     fuse = +fuse;
     let multiplier = 1;
+
     if (fuse > 75000000) {
-      if (rand >= 50 && rand <= 56) {
-        multiplier = 1.01;
-      } else if (rand >= 57 && rand <= 58) {
-        multiplier = 1.05;
-      } else if (rand == 59) {
-        multiplier = 1.1;
-      } else if (rand >= 60 && rand <= 74) {
-        multiplier = 0.75;
-      } else if (rand >= 75 && rand <= 99) {
-        multiplier = 0.25;
-      } else if (rand >= 0 && rand <= 34) {
-        multiplier = 0.5;
+      let power = 0;
+      ability = ability.split('-');
+
+      let abSum = 0;
+      for (let i = 0; i < ability.length; i++) {
+        let ab = +ability[i];
+        if (ab !== NaN) {
+          abSum += ab;  
+        }
       }
+      for (let i=0; i < gene.length; i++) {
+        power += this._getValue(ALPHA.indexOf(gene[i])+1)
+      }
+      power += abSum;
+
+      if (power < (fuse * 0.3)){
+        return fuse * 0.5;
+      } 
+      return power;
+
     } else if (fuse > 50000000) {
       if (rand >= 50 && rand <= 56) {
         multiplier = 1.1;
@@ -312,7 +337,7 @@ class NFT {
       )[0];    
     } else {
       let rand = _random();
-      power = this._getPower(fuse, rand)
+      power = this._getPower(fuse, rand, gene, ability)
     }
     
 
