@@ -111,7 +111,7 @@ class GeneScience {
   _getMultiplier() {
     return this._get('multiplier', 1);
   }
-
+  
   calculatePower(gene, ability) {
     const multiplier = this._getMultiplier();
     ability = ability.split('-');
@@ -173,7 +173,9 @@ class GeneScience {
         let attr = gt + _random(lt);
         let multiplier = [0.5,0.75,1,1,1,1,1.25,1.25,1.5,2]; 
         if (attr > 1000000) {
-          multiplier = [0.25,0.25,0.5,0.5,0.75,0.75,1,1,1,1.25];
+          multiplier = [0.3, 0.4, 0.5, 0.6, 1]
+        } else if (attr > 500000) {
+          multiplier = [0.25,0.25,0.5,0.5,0.75,0.75,1,1,1,1];
         } else if (attr > 100000){
           multiplier = [0.25,0.5,0.5,0.75,0.75,1,1,1,1.25,1.5];
         }
