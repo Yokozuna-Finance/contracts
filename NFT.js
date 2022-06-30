@@ -218,12 +218,10 @@ class NFT {
     return this._getStaticURL() + tokenId + '.png'
   }
 
-  _getValue(length){
-    let first = 50;
-    let second = 200;
+  _getValue(first, second, length, maxValue=20000000){
     let temp;
     if (length > 28) {
-      return 20000000;
+      return maxValue;
     }
     length -= 2
     while (length > 0) {
@@ -242,7 +240,6 @@ class NFT {
     if (fuse > 75000000) {
       let power = 0;
       ability = ability.split('-');
-
       let abSum = 0;
       for (let i = 0; i < ability.length; i++) {
         let ab = +ability[i];
@@ -251,7 +248,7 @@ class NFT {
         }
       }
       for (let i=0; i < gene.length; i++) {
-        power += this._getValue(ALPHA.indexOf(gene[i])+1)
+        power += this._getValue(50, 200, ALPHA.indexOf(gene[i])+1)
       }
       power += abSum;
 
@@ -538,11 +535,17 @@ class NFT {
       [nft1.gene, nft2.gene, true]
     )[0];
 
-    let mutated_ability = blockchain.call(
-      this._getGeneScience(),
-      "mixAbilities",
-      [nft1.ability, nft2.ability, true]
-    )[0];
+    let ability = mutated_gene.substring(36);
+
+    let attr = 0;
+    let mutated_ability = [];
+    for (let i=0; i < ability.length; i++) {
+      attr += this._getValue(10, 50, ALPHA.indexOf(ability[i])+1, 1000000)
+      if (i % 4 === 3) {
+        mutated_ability.push(attr.toString())
+        attr = 0;
+      }
+    }
 
     let tenorValue = +tenor.replace('Y','');
     let tenor1 = +nft1.tenor.replace('Y','');
@@ -555,7 +558,7 @@ class NFT {
     let pushP = new Float64(nft1.pushPower).plus(nft2.pushPower);
     let tokenId = this._generate(
       mutated_gene,
-      mutated_ability,
+      mutated_ability.join("-"),
       blockchain.contractName(),
       pushP
     );
