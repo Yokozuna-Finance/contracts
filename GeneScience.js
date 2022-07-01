@@ -263,7 +263,7 @@ class GeneScience {
 
       if (probability) {
         if ((_random()) < probability) {
-          let idx = gene1 + 1;
+          let idx = gene1 + _random(3);
           if (idx+1 <= ALPHA.length){
             mutation = ALPHA[idx];
           }
