@@ -1,8 +1,7 @@
 const NFT_CONTRACT_ID = 'NFT_CONTRACT';
 const DAO_CONTRACT_ID = 'DAO_CONTRACT_ID';
 const TOKEN_SYMBOL = 'zuna';
-const SELLER_PERCENT_PROFIT = 80;
-const SALE_COMMISSION = 20;
+const SALE_COMMISSION = 'SALE_COMMISSION';
 
 class Market {
 
@@ -100,6 +99,10 @@ class Market {
     if (val1 !== val2) throw err;
   }
 
+  _gte(val1, val2, err) {
+    if (val1 >=val2 ) throw err;
+  }
+
   _ltF(val1, val2, err) {
     if (this._f(val1).lt(val2)) throw err;
   }
@@ -135,9 +138,11 @@ class Market {
     this._setUserData(account, userData);
   }
 
-  _addRemoveOrder(account, orderData) {
+  _addRemoveOrder(account, orderData, cancel=false) {
     const userData = this._getUserData(account);
-    userData.totalSell ++;
+    if (cancel === false) {
+      userData.totalSell ++;
+    }
     if(userData.sellOrderCount > 0){
       userData.sellOrderCount -= 1;
     }
@@ -179,12 +184,16 @@ class Market {
     return this._getContract(DAO_CONTRACT_ID, "DAO");
   }
 
-  _getOrderCount(){
+  _getOrderCount() {
     return this._get("ORDERCOUNT", 0);
   }
 
-  _getOrderId(){
+  _getOrderId() {
     return this._get("ORDERID", 1, 0);
+  }
+
+  _getSaleCommission() {
+    return this._get(SALE_COMMISSION, 10, 0);
   }
 
   _getSellOrder(orderId){
@@ -216,6 +225,11 @@ class Market {
   _safeTransfer(from, to, amount, symbol, memo){
     this._notEqual(symbol, TOKEN_SYMBOL, "symbol not supported");
     blockchain.callWithAuth("token.iost", "transfer", [symbol, from, to, amount, memo]);
+  }
+
+  _setSaleCommission(percentage=10) {
+    this._gte(percentage, 100, "Sale commission is invalid");
+    this._put(SALE_COMMISSION, percentage);
   }
 
   _setContract(contractID, key) {
@@ -259,10 +273,12 @@ class Market {
   }
 
   _sellerProfit(orderData, memo) {
+    const saleCommission = this._getSaleCommission();
+    const sellerProfit = 100 - saleCommission;
     this._safeTransfer(
       orderData.owner,
       orderData.creator,
-      this._f(orderData.price).multi(SELLER_PERCENT_PROFIT/100).toFixed(2),
+      this._f(orderData.price).multi(sellerProfit/100).toFixed(2),
       orderData.symbol, memo
     );
   }
@@ -273,7 +289,8 @@ class Market {
   }
 
   _saleCommision(price) {
-    return this._f(price).multi(SALE_COMMISSION/100).div(2).toFixed(2);
+    const saleCommission = this._getSaleCommission();
+    return this._f(price).multi(saleCommission/100).div(2).toFixed(2);
   }
 
   _DaoFee(contract, orderData) {
@@ -373,6 +390,30 @@ class Market {
 
   buyToken(orderID) {
     this._buyToken(orderID);
+  }
+
+  cancelOrder(orderID) {
+    const caller = tx.publisher
+    const orderData = this._getSellOrder(orderID);
+    this._notEqual(caller, orderData.creator, "Invalid orderId.");
+    this._addRemoveOrder(orderData.creator, orderData, true);
+    this._addRemoveOrder(orderData.owner, orderData, true);
+    this._removeOrder(orderID);
+    blockchain.receipt(
+      JSON.stringify([orderData.nft.tokenId, 'Cancel order is successful.'])
+    );
+    this._transfer(
+      blockchain.contractName(),
+      caller,
+      orderData,
+      "SECONDARY-MARKET-CANCEL-"
+    );
+    return;
+  }
+
+  setSaleCommission(percentage) {
+    this._requireOwner();
+    this._setSaleCommission(percentage);
   }
 
   can_update(data) {

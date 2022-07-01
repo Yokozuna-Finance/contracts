@@ -42,6 +42,20 @@
             }]
         },
         {
+            "name": "cancelOrder",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setSaleCommission",
+            "args": [
+                "number"
+            ],
+            "amountLimit": []
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"
