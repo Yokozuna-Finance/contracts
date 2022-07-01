@@ -233,80 +233,21 @@ class NFT {
     return second-first;
   }
 
-  _getPower(fuse, rand, gene, ability) {
-    fuse = +fuse;
-    let multiplier = 1;
-
-    if (fuse > 75000000) {
-      let power = 0;
-      ability = ability.split('-');
-      let abSum = 0;
-      for (let i = 0; i < ability.length; i++) {
-        let ab = +ability[i];
-        if (ab !== NaN) {
-          abSum += ab;  
-        }
-      }
-      for (let i=0; i < gene.length; i++) {
-        power += this._getValue(50, 200, ALPHA.indexOf(gene[i])+1)
-      }
-      power += abSum;
-
-      if (power < (fuse * 0.3)){
-        return fuse * 0.5;
-      } 
-      return power;
-
-    } else if (fuse > 50000000) {
-      if (rand >= 50 && rand <= 56) {
-        multiplier = 1.1;
-      } else if (rand >= 57 && rand <= 58) {
-        multiplier = 1.2;
-      } else if (rand == 59) {
-        multiplier = 1.3;
-      } else if (rand >= 60 && rand <= 74) {
-        multiplier = 0.75;
-      } else if (rand >= 75 && rand <= 99) {
-        multiplier = 0.25;
-      } else if (rand >= 0 && rand <= 24) {
-        multiplier = 0.5;
-      }
-    } else if (fuse > 10000000) {
-      if (rand >= 40 && rand <= 59) {
-        multiplier = 1.25;
-      } else if (rand >= 60 && rand <= 66) {
-        multiplier = 1.5;
-      } else if (rand >= 67 && rand <= 68) {
-        multiplier = 1.75;
-      } else if (rand == 69) {
-        multiplier = 2;
-      } else if (rand >= 70 && rand <= 89) {
-        multiplier = 0.75;
-      } else if (rand >= 90 && rand <= 99) {
-        multiplier = 0.25;
-      } else if (rand >= 0 && rand <= 14) {
-        multiplier = 0.5;
-      }
-    } else {
-      if (rand >= 40 && rand <= 59) {
-        multiplier = 2;
-      } else if (rand >= 60 && rand <= 66) {
-        multiplier = 3;
-      } else if (rand >= 67 && rand <= 68) {
-        multiplier = 4;
-      } else if (rand == 69) {
-        multiplier = 5;
-      } else if (rand >= 70 && rand <= 89) {
-        multiplier = 0.5;
-      } else if (rand >= 90 && rand <= 99) {
-        multiplier = 0.25;
+  _getPower(gene, ability) {
+    
+    let power = 0;
+    ability = ability.split('-');
+    let abSum = 0;
+    for (let i = 0; i < ability.length; i++) {
+      let ab = +ability[i];
+      if (ab !== NaN) {
+        abSum += ab;  
       }
     }
-
-    let power = Math.ceil(fuse * multiplier)
-    if (power > PP_LIMIT) {
-      return PP_LIMIT;
+    for (let i=0; i < gene.length; i++) {
+      power += this._getValue(50, 200, ALPHA.indexOf(gene[i])+1);
     }
+    power += abSum;
     return power;
   }
 
@@ -314,18 +255,8 @@ class NFT {
     if(gene === undefined) {
         throw 'Invalid gene';
     }
-
-    let seed = block.time / 1000;
-    function _random(mod=100) {
-      seed ^= seed << 13; 
-      seed ^= seed >> 17;
-      seed ^= seed << 5;
-      var res = (seed <0) ? ~seed+1 : seed;
-      return res % mod;
-    }
-
-    let power;
     let currentID = this._generateID();
+    let power;
     if (fuse === false) {
       power = blockchain.call(
         this._getGeneScience(), 
@@ -333,12 +264,8 @@ class NFT {
         [gene, ability]
       )[0];    
     } else {
-      let rand = _random();
-      power = this._getPower(fuse, rand, gene, ability)
+      power = this._getPower(gene, ability)
     }
-    
-
-    // NFT generation 
     let tokenInfo = {
         owner: owner,
         id: currentID,
@@ -560,7 +487,7 @@ class NFT {
       mutated_gene,
       mutated_ability.join("-"),
       blockchain.contractName(),
-      pushP
+      true
     );
 
     let bondPrice = this._getBondPrice(nft1, nft2, tenor)
