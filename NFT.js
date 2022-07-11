@@ -218,12 +218,12 @@ class NFT {
     return this._getStaticURL() + tokenId + '.png'
   }
 
-  _getValue(first, second, length, maxValue=20000000){
+  _getValue(first, second, length, maxValue=1000000){
     let temp;
     if (length > 28) {
       return maxValue;
     }
-    length -= 2
+    length -= 2;
     while (length > 0) {
       temp = second;
       second = first + second;
@@ -231,6 +231,25 @@ class NFT {
       length -= 1;
     }
     return second-first;
+  }
+
+  _getGeneValue(first, second, length, multiplier=1, maxValue=20833333){
+    let temp;
+
+    if (length > 28) {
+      return maxValue;
+    }
+    if (length <= 2) {
+      return [first, second][length-1]
+    }
+    length -= 2;
+    while (length > 0) {
+      temp = second;
+      second = (first + second) * multiplier;
+      first = temp;
+      length -= 1;
+    }
+    return second;
   }
 
   _getPower(gene, ability) {
@@ -244,8 +263,27 @@ class NFT {
         abSum += ab;  
       }
     }
+
     for (let i=0; i < gene.length; i++) {
-      power += this._getValue(50, 200, ALPHA.indexOf(gene[i])+1);
+      let idx = ALPHA.indexOf(gene[i])+1;
+      if (idx <= 5) {
+        power += this._getGeneValue(1500, 5900, idx);
+      } else if (idx >= 6 && idx <= 8) {
+        idx -= 5;
+        power += this._getGeneValue(200000, 317500, idx);
+      } else if (idx >= 9 && idx <= 10) {
+        idx -= 8;
+        power += this._getGeneValue(400000, 1041666, idx);
+      } else if (idx >= 11 && idx <= 12) {
+        idx -= 10;
+        power += this._getGeneValue(1200000, 1562500, idx);
+      } else if (idx >= 13 && idx <= 14) {
+        idx -= 12;
+        power += this._getGeneValue(1700000, 2083333, idx);
+      } else {
+        idx -= 14;
+        power += this._getGeneValue(3500000, 5150000, idx, multiplier=0.6);
+      }
     }
     power += abSum;
     return power;
@@ -467,7 +505,7 @@ class NFT {
     let attr = 0;
     let mutated_ability = [];
     for (let i=0; i < ability.length; i++) {
-      attr += this._getValue(10, 50, ALPHA.indexOf(ability[i])+1, 1000000)
+      attr += this._getValue(10, 50, ALPHA.indexOf(ability[i])+1)
       if (i % 4 === 3) {
         mutated_ability.push(attr.toString())
         attr = 0;
