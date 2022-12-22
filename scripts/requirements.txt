@@ -6,6 +6,7 @@ ed25519==1.5
 googleapis-common-protos==1.55.0
 grpcio==1.44.0
 idna==3.3
+pandas==1.5.2
 protobuf==3.19.4
 protobuf3-to-dict==0.1.5
 pyost==3.0.7

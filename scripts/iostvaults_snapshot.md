@@ -25,7 +25,7 @@ optional arguments:
   -a {get_users,distribute}, --action {get_users,distribute}
                         get the user list or process airdrop distibution, default get_users;
   -t TOKEN_AMOUNT, --token_amount TOKEN_AMOUNT
-                        amount of token to be distributed
+                        amount of token to be distributed, default 250000
 
 ```
 
