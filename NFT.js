@@ -188,25 +188,41 @@ class NFT {
     }
   }
 
-  _addToTokenList(tokenId, user) {
-    let tokenList = this._mapGet('userNFT', user, []);
-    tokenList.push(tokenId);
-    this._mapPut('userNFT', user, tokenList)
+  _addToTokenList(tokenId, user, userFrom) {
+    let tokenList;
+    if(userFrom == this._getDAO()){
+      tokenList = this._get('userNFT.DAO.' + user, []);
+      tokenList.push(tokenId);
+      this._put('userNFT.DAO.' + user, tokenList);
+    } else {
+      tokenList = this._mapGet('userNFT', user, []);
+      tokenList.push(tokenId);
+      this._mapPut('userNFT', user, tokenList);
+    }
   }
 
-  _removeToTokenList(tokenId, user) {
+  _removeToTokenList(tokenId, user, userTo) {
     let tokenList = this._mapGet('userNFT', user, []);
     let idx = tokenList.indexOf(tokenId);
     if (idx !== -1) {
       tokenList.splice(idx, 1);
+      this._mapPut('userNFT', user, tokenList)
+    } else if(idx == -1 && userTo == this._getDAO()) {
+      let daoTokenList = this._get('userNFT.DAO.' + user, []);
+      let didx = daoTokenList.indexOf(tokenId);
+
+      if (didx !== -1) {
+        daoTokenList.splice(didx, 1);
+        this._put('userNFT.DAO.' + user, daoTokenList)
+      }
     }
-    this._mapPut('userNFT', user, tokenList)
+    
   }
 
   _updateTokenList(tokenId, userFrom, userTo) {
-    this._removeToTokenList(tokenId, userFrom);
+    this._removeToTokenList(tokenId, userFrom, userTo);
     if (userTo != 'deadaddr') {
-      this._addToTokenList(tokenId, userTo);    
+      this._addToTokenList(tokenId, userTo, userFrom);    
     }
   }
 
@@ -319,7 +335,7 @@ class NFT {
 
     let balance = this._get('bal.' + owner);
     this._put('bal.' + owner, balance + 1);
-    this._addToTokenList(currentID, owner);
+    this._addToTokenList(currentID, owner, null);
     this._mintReceipt(currentID);
     return currentID;
   }
