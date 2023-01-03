@@ -90,7 +90,7 @@ class DAO {
     if(contractID.length < 51 || contractID.indexOf("Contract") != 0){
       throw "Invalid contract ID."
     }
-    this._put('nft', contractID, tx.publisher)
+    this._put('nft', contractID)
   }
 
 
@@ -102,7 +102,7 @@ class DAO {
     if (!amount || amount <= 0) {
         throw 'Invalid amount'
     }
-    this._put('dd', amount, tx.publisher)
+    this._put('dd', amount)
   }
 
   _getDailyDistribution() {
@@ -150,7 +150,7 @@ class DAO {
   }
 
   _setUserInfo(who, info) {
-    this._mapPut("userInfo", who, info, tx.publisher);
+    this._put("userInfo." + who, info, true)
   }
 
   _updatePool(pool) {
@@ -213,7 +213,13 @@ class DAO {
   }
 
   _getUserInfo(who) {
-    return this._mapGet("userInfo", who, null);
+    let userInfo = this._mapGet("userInfo", who, null, true);
+
+    if (userInfo === null) {
+        userInfo = this._get("userInfo." + who, null, true)
+    }
+
+    return userInfo;
   }
 
   stake(tokenId) {
