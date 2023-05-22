@@ -149,8 +149,16 @@ class DAO {
     this._put('pool', pool)
   }
 
+  _setPoolObjV2(pool) {
+    this._put('poolv2', pool)
+  }
+
   _setUserInfo(who, info) {
     this._mapPut("userInfo", who, info, tx.publisher);
+  }
+
+  _setUserInfoV2(who, info) {
+    this._mapPut("userInfo." + who, info, tx.publisher);
   }
 
   _updatePool(pool) {
@@ -169,6 +177,26 @@ class DAO {
     pool.lastRewardTime = now;
     
     this._setPoolObj(pool);
+    return pool;
+  }
+
+
+  _updatePoolV2(pool) {
+    const now = this._getNow();
+    const total = new BigNumber(pool.total);
+
+    if (total.eq(0)) {
+      pool.lastRewardTime = now;
+      this._setPoolObjV2(pool);
+      return pool;
+    }
+
+    
+    let reward = this._getReward(pool, now)
+    pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
+    pool.lastRewardTime = now;
+    
+    this._setPoolObjV2(pool);
     return pool;
   }
 
@@ -208,15 +236,51 @@ class DAO {
     )
   }
 
-  _getPool() {
+
+  setPoolV2() {
+    this._requireOwner();
+
+    const now = this._getNow();
+    const startDate = this._get('startv2', undefined);
+    let lastRewardTime;
+
+    if (startDate === undefined) {
+      lastRewardTime = now;
+    } else {
+      lastRewardTime = now > startDate ? now : startDate;    
+    }
+    
+    this._put(
+      'poolv2', 
+      {
+        total: "0",
+        tokenPrecision: 8,
+        lastRewardTime: lastRewardTime,
+        accPerShare: "0"
+      },
+      true
+    )
+  }
+
+
+  _getPool(v2=false) {
     return this._get('pool', null);
+  }
+
+
+  _getPoolV2() {
+    return this._get('poolv2', null);
   }
 
   _getUserInfo(who) {
     return this._mapGet("userInfo", who, null);
   }
 
-  stake(tokenId) {
+  _getUserInfoV2(who) {
+    return this._get("userInfo." + who, null);
+  }
+
+  stakeV2(tokenId) {
     this._requireAuth(tx.publisher);
     const nftInfo = this._getTokenDetails(tokenId);
 
@@ -234,7 +298,7 @@ class DAO {
     // add to user tokenId list
     this._addToUserTokenList(tokenId);
 
-    let userInfo = this._getUserInfo(tx.publisher);
+    let userInfo = this._getUserInfoV2(tx.publisher);
     if (!userInfo) {
       userInfo = {
         amount: "0",
@@ -245,8 +309,8 @@ class DAO {
 
     var userAmount = new BigNumber(userInfo.amount);
 
-    let pool = this._getPool();
-    pool = this._updatePool(pool);
+    let pool = this._getPoolV2();
+    pool = this._updatePoolV2(pool);
 
     if (userAmount.gt(0)) {
       userInfo.rewardPending = userAmount.times(pool.accPerShare).minus(
@@ -263,9 +327,9 @@ class DAO {
     userInfo.amount = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
 
-    this._setUserInfo(tx.publisher, userInfo);
+    this._setUserInfoV2(tx.publisher, userInfo);
     pool.total = new BigNumber(pool.total).plus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
-    this._setPoolObj(pool);
+    this._setPoolObjV2(pool);
     blockchain.receipt(JSON.stringify(["deposit", tokenId, nftInfo.pushPower]));
   }
 
@@ -323,6 +387,61 @@ class DAO {
     return nftInfo.pushPower;
   }
 
+
+  unstakeV2(tokenId) {
+    const stakedNFT = this._getUserStakedToken();
+    const nftInfo = this._getTokenDetails(tokenId);
+
+    if (stakedNFT.indexOf(tokenId) < 0 ) {
+      throw "Invalid token id."
+    }
+    
+    this._removeToUserTokenList(tokenId);
+
+    let pool = this._getPoolV2();
+    let userInfo = this._getUserInfoV2(tx.publisher);
+
+    pool = this._updatePoolV2(pool);
+
+    const userAmount = new BigNumber(userInfo.amount);
+    const amountStr = new BigNumber(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
+    const pending = userAmount.times(pool.accPerShare).plus(
+        userInfo.rewardPending).minus(userInfo.rewardDebt);
+    const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
+    
+    if (new BigNumber(pendingStr).gt(0)) {
+      blockchain.callWithAuth("token.iost", "transfer",
+        [TOKEN_REWARD,
+          blockchain.contractName(),
+          tx.publisher,
+          pendingStr.toString(),
+          "Claimed pending rewards"]);
+      userInfo.rewardPending = "0";
+    }
+
+    const userRemainingAmount = new BigNumber(userInfo.amount).minus(nftInfo.pushPower);
+    if (userRemainingAmount.lt(0)) {
+      throw "Invalid remaining amount";
+    }
+
+    userInfo.amount = userRemainingAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
+    userInfo.rewardDebt = userRemainingAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
+    this._setUserInfoV2(tx.publisher, userInfo);
+
+    pool.total = new BigNumber(pool.total).minus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
+    this._setPoolObjV2(pool);
+
+    // transfer NFT to user
+    blockchain.callWithAuth(
+      this._getNFT(),
+      'transfer', 
+      [tokenId, blockchain.contractName(), tx.publisher, "1", 'NFT withdraw']
+    )
+
+    blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, nftInfo.pushPower]));
+    return nftInfo.pushPower;
+  }
+
   claim() {
     let userInfo = this._getUserInfo(tx.publisher);
     let pool = this._getPool()
@@ -349,10 +468,50 @@ class DAO {
     }
   }
 
+  claimV2() {
+    let userInfo = this._getUserInfoV2(tx.publisher);
+    let pool = this._getPoolV2()
+    pool = this._updatePoolV2(pool);
+
+    const userAmount = new BigNumber(userInfo.amount);
+    const pending = userAmount.times(pool.accPerShare).plus(
+        userInfo.rewardPending).minus(userInfo.rewardDebt);
+    const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
+
+    if (pending.gt(0)){
+      blockchain.callWithAuth("token.iost", "transfer",
+        [TOKEN_REWARD,
+         blockchain.contractName(),
+         tx.publisher,
+         pendingStr,
+         "Claiming token rewards"]);
+
+      userInfo.rewardPending = "0";
+      userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
+
+      blockchain.receipt(JSON.stringify(["claim", pendingStr]));
+      this._setUserInfoV2(tx.publisher, userInfo);    
+    }
+  }
+
   calculate(user) {
     let userInfo = this._getUserInfo(user);
     let pool = this._getPool()
     pool = this._updatePool(pool);
+
+    const userAmount = new BigNumber(userInfo.amount);
+    const pending = userAmount.times(pool.accPerShare).plus(
+        userInfo.rewardPending).minus(userInfo.rewardDebt);
+    const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
+
+    return [pool, pendingStr, userInfo]
+  }
+
+
+  calculateV2(user) {
+    let userInfo = this._getUserInfoV2(user);
+    let pool = this._getPoolV2()
+    pool = this._updatePoolV2(pool);
 
     const userAmount = new BigNumber(userInfo.amount);
     const pending = userAmount.times(pool.accPerShare).plus(
