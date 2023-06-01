@@ -158,7 +158,7 @@ class DAO {
   }
 
   _setUserInfoV2(who, info) {
-    this._mapPut("userInfo." + who, info, tx.publisher);
+    this._put("userInfo." + who, info, tx.publisher);
   }
 
   _updatePool(pool) {
@@ -287,11 +287,9 @@ class DAO {
     if (nftInfo.owner !== tx.publisher) {
         throw "Permission denied.";
     }
-
     if (this._getUserStakedToken().length >= STAKE_LIMIT) {
         throw "Max staked NFT reached."
     }
-
     if (this._getUserStakedToken().indexOf(tokenId) >= 0) {
         throw 'Token already staked.'
     }
@@ -322,11 +320,9 @@ class DAO {
       'transfer', 
       [tokenId, tx.publisher, blockchain.contractName(), "1", 'NFT deposit']
     )
-
     userAmount = userAmount.plus(nftInfo.pushPower);
     userInfo.amount = userAmount.toFixed(pool.tokenPrecision, ROUND_DOWN);
     userInfo.rewardDebt = userAmount.times(pool.accPerShare).toFixed(pool.tokenPrecision, ROUND_UP);
-
     this._setUserInfoV2(tx.publisher, userInfo);
     pool.total = new BigNumber(pool.total).plus(nftInfo.pushPower).toFixed(pool.tokenPrecision, ROUND_DOWN);
     this._setPoolObjV2(pool);
