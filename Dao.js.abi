@@ -5,49 +5,48 @@
         {
             "name": "isLocked",
             "args": [],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         },
         {
             "name": "setNFT",
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         },
         {
             "name": "setDailyDistibution",
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         },
         {
             "name": "setStartDate",
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         },
         {
             "name": "setPool",
             "args": [],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         },
         {
-            "name": "stake",
+            "name": "setPoolV2",
+            "args": [],
+            "amountLimit": []
+        },
+        {
+            "name": "stakeV2",
             "args": [
                 "string"
             ],
             "amountLimit": [{
                 "token": "*",
                 "val": "unlimited"
-            }],
-            "description": ""
+            }]
         },
         {
             "name": "unstake",
@@ -57,30 +56,48 @@
             "amountLimit": [{
                 "token": "*",
                 "val": "unlimited"
-            }],
-            "description": ""
+            }]
+        },
+        {
+            "name": "unstakeV2",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "claim",
             "args": [],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
+        },
+        {
+            "name": "claimV2",
+            "args": [],
+            "amountLimit": []
         },
         {
             "name": "calculate",
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
+        },
+        {
+            "name": "calculateV2",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
         },
         {
             "name": "can_update",
             "args": [
                 "string"
             ],
-            "amountLimit": [],
-            "description": ""
+            "amountLimit": []
         }
     ]
 }
