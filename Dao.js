@@ -117,15 +117,6 @@ class DAO {
     return this._globalGet(this._getNFT(), 'znft.' + tokenId, null); 
   } 
 
-  _addToUserTokenList(tokenId) {
-    const stakedNFT = this._getUserStakedToken()
-    if (stakedNFT.indexOf(tokenId) > 0) {
-      throw "Token already staked."
-    }
-    stakedNFT.push(tokenId)
-    this._put('staked.' + tx.publisher, stakedNFT, true)
-  }
-
   _removeToUserTokenList(tokenId) {
     const stakedNFT = this._getUserStakedToken()
     const stakedIdx = stakedNFT.indexOf(tokenId)
@@ -138,6 +129,30 @@ class DAO {
 
   _getUserStakedToken() {
     return this._get('staked.' + tx.publisher, [])
+  }
+
+
+  _addToUserTokenListV2(tokenId) {
+    const stakedNFT = this._getUserStakedTokenV2()
+    if (stakedNFT.indexOf(tokenId) > 0) {
+      throw "Token already staked."
+    }
+    stakedNFT.push(tokenId)
+    this._put('stakedV2.' + tx.publisher, stakedNFT, true)
+  }
+
+  _removeToUserTokenListV2(tokenId) {
+    const stakedNFT = this._getUserStakedTokenV2()
+    const stakedIdx = stakedNFT.indexOf(tokenId)
+    if (stakedIdx < 0) {
+      throw "Invalid token id."
+    }
+    stakedNFT.splice(stakedIdx, 1)
+    this._put('stakedV2.' + tx.publisher, stakedNFT, true)
+  }
+
+  _getUserStakedTokenV2() {
+    return this._get('stakedV2.' + tx.publisher, [])
   }
 
   _getReward(pool, toTime) {
@@ -287,14 +302,14 @@ class DAO {
     if (nftInfo.owner !== tx.publisher) {
         throw "Permission denied.";
     }
-    if (this._getUserStakedToken().length >= STAKE_LIMIT) {
+    if ((this._getUserStakedToken().length + this._getUserStakedTokenV2().length) >= STAKE_LIMIT) {
         throw "Max staked NFT reached."
     }
-    if (this._getUserStakedToken().indexOf(tokenId) >= 0) {
+    if (this._getUserStakedToken().indexOf(tokenId) >= 0 || this._getUserStakedTokenV2().indexOf(tokenId) >= 0) {
         throw 'Token already staked.'
     }
     // add to user tokenId list
-    this._addToUserTokenList(tokenId);
+    this._addToUserTokenListV2(tokenId);
 
     let userInfo = this._getUserInfoV2(tx.publisher);
     if (!userInfo) {
@@ -385,14 +400,14 @@ class DAO {
 
 
   unstakeV2(tokenId) {
-    const stakedNFT = this._getUserStakedToken();
+    const stakedNFT = this._getUserStakedTokenV2();
     const nftInfo = this._getTokenDetails(tokenId);
 
     if (stakedNFT.indexOf(tokenId) < 0 ) {
       throw "Invalid token id."
     }
     
-    this._removeToUserTokenList(tokenId);
+    this._removeToUserTokenListV2(tokenId);
 
     let pool = this._getPoolV2();
     let userInfo = this._getUserInfoV2(tx.publisher);
