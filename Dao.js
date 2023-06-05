@@ -157,6 +157,11 @@ class DAO {
 
   _getReward(pool, toTime) {
     const elapsedTime = new BigNumber(toTime).minus(pool.lastRewardTime).div(86400)
+    return elapsedTime.times(0);
+  }
+
+  _getRewardV2(pool, toTime) {
+    const elapsedTime = new BigNumber(toTime).minus(pool.lastRewardTime).div(86400)
     return elapsedTime.times(this._getDailyDistribution());
   }
 
@@ -207,7 +212,7 @@ class DAO {
     }
 
     
-    let reward = this._getReward(pool, now)
+    let reward = this._getRewardV2(pool, now)
     pool.accPerShare = new BigNumber(pool.accPerShare).plus(reward.div(pool.total)).toFixed(pool.tokenPrecision, ROUND_DOWN)
     pool.lastRewardTime = now;
     
