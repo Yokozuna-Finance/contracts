@@ -189,18 +189,31 @@ class NFT {
   }
 
   _addToTokenList(tokenId, user) {
-    let tokenList = this._mapGet('userNFT', user, []);
+    let tokenListV1 = this._mapGet('userNFT', user, []);
+    let tokenListV2 = this._get('userNFT.' + user, []);
+    let tokenList = tokenListV1.concat(tokenListV2);
     tokenList.push(tokenId);
-    this._mapPut('userNFT', user, tokenList)
+    this._put('userNFT.' + user, tokenList)
+
+    if (tokenListV1.length > 0) {
+        // clear old token list
+        this._mapPut('userNFT', user, [])
+    }
   }
 
   _removeToTokenList(tokenId, user) {
-    let tokenList = this._mapGet('userNFT', user, []);
+    let tokenListV1 = this._mapGet('userNFT', user, []);
+    let tokenListV2 = this._get('userNFT.' + user, []);
+    let tokenList = tokenListV1.concat(tokenListV2);
     let idx = tokenList.indexOf(tokenId);
     if (idx !== -1) {
       tokenList.splice(idx, 1);
     }
-    this._mapPut('userNFT', user, tokenList)
+    this._put('userNFT.' + user, tokenList);
+    if (tokenListV1.length > 0) {
+        // clear old token list
+        this._mapPut('userNFT', user, [])
+    }
   }
 
   _updateTokenList(tokenId, userFrom, userTo) {
@@ -693,6 +706,7 @@ class NFT {
   clearDeadAddrNFTLog() {
     this._requireOwner()
     this._mapPut('userNFT', 'deadaddr', [])
+    this._put('userNFT.deadaddr', [])
   }
 
   sendNFT(user) {
