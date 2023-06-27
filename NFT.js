@@ -188,6 +188,42 @@ class NFT {
     }
   }
 
+  _getDAOTokenList(user) {
+    /*
+    v1 token list is from userNFT <dao contract id>
+    v2 token list is from userNFT.<dao contract id>
+    v3 token list is from userNFT.dao-contract-id.user
+    */
+    let tokenListV1 = this._mapGet('userNFT', this._getDAO(), []);
+    let tokenListV2 = this._get('userNFT.' + this._getDAO(), []);
+    let tokenList = tokenListV1.concat(tokenListV2);
+
+    return tokenList;
+  }
+
+  _removeToDAOTokenList(tokenId, user) {
+    let tokenList = this._getDAOTokenList(user);
+    let idx = tokenList.indexOf(tokenId);
+    if (idx !== -1) {
+      tokenList.splice(idx, 1);
+      this._put('userNFT.' + user, tokenList);
+    }
+    // check if token is in v3 storage
+    let tokenListV3 = this._get('userNFT.DAO.' + user, []);
+    idx = tokenListV3.indexOf(tokenId);
+    if (idx !== -1) {
+      tokenListV3.splice(idx, 1);
+      this._put('userNFT.DAO.' + user, tokenListV3);      
+    }
+  }
+
+
+  _addToDAOTokenList(tokenId, user) {
+    let tokenListV3 = this._get('userNFT.' + this._getDAO() + '.' + user, []);
+    tokenListV3.push(tokenId);
+    this._put('userNFT.DAO.' + user, tokenListV3);
+  }
+
   _addToTokenList(tokenId, user) {
     let tokenListV1 = this._mapGet('userNFT', user, []);
     let tokenListV2 = this._get('userNFT.' + user, []);
@@ -205,6 +241,7 @@ class NFT {
     let tokenListV1 = this._mapGet('userNFT', user, []);
     let tokenListV2 = this._get('userNFT.' + user, []);
     let tokenList = tokenListV1.concat(tokenListV2);
+
     let idx = tokenList.indexOf(tokenId);
     if (idx !== -1) {
       tokenList.splice(idx, 1);
@@ -217,9 +254,21 @@ class NFT {
   }
 
   _updateTokenList(tokenId, userFrom, userTo) {
-    this._removeToTokenList(tokenId, userFrom);
+    let dao = this._getDAO();
+
+    if (userFrom == dao){
+        this._removeToDAOTokenList(tokenId, userTo)
+    } else {
+        this._removeToTokenList(tokenId, userFrom);
+    }
+    
     if (userTo != 'deadaddr') {
-      this._addToTokenList(tokenId, userTo);    
+      if (userTo != dao) {
+        this._addToTokenList(tokenId, userTo);
+      } else {
+        this._addToDAOTokenList(tokenId, userFrom);
+      }
+       
     }
   }
 
