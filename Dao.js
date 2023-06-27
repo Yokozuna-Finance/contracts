@@ -1,4 +1,4 @@
-const DAILY_DISTRIBUTION = 10000;
+const DAILY_DISTRIBUTION = 10;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
 const TOKEN_REWARD = 'iost';
@@ -399,7 +399,9 @@ class DAO {
       [tokenId, blockchain.contractName(), tx.publisher, "1", 'NFT withdraw']
     )
 
-    blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, nftInfo.pushPower]));
+    if (pendingStr.gt(0)) {
+        blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, nftInfo.pushPower]));    
+    }
     return nftInfo.pushPower;
   }
 
