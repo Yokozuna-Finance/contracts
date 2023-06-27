@@ -399,7 +399,7 @@ class DAO {
       [tokenId, blockchain.contractName(), tx.publisher, "1", 'NFT withdraw']
     )
 
-    if (pendingStr.gt(0)) {
+    if (pendingStr > 0) {
         blockchain.receipt(JSON.stringify(["withdraw", tokenId, pendingStr, nftInfo.pushPower]));    
     }
     return nftInfo.pushPower;
