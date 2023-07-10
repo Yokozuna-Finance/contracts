@@ -206,7 +206,7 @@ class NFT {
     let idx = tokenList.indexOf(tokenId);
     if (idx !== -1) {
       tokenList.splice(idx, 1);
-      this._put('userNFT.' + user, tokenList);
+      this._put('userNFT.' + this._getDAO(), tokenList);
     }
     // check if token is in v3 storage
     let tokenListV3 = this._get('userNFT.DAO.' + user, []);
@@ -219,7 +219,7 @@ class NFT {
 
 
   _addToDAOTokenList(tokenId, user) {
-    let tokenListV3 = this._get('userNFT.' + this._getDAO() + '.' + user, []);
+    let tokenListV3 = this._get('userNFT.DAO.' + user, []);
     tokenListV3.push(tokenId);
     this._put('userNFT.DAO.' + user, tokenListV3);
   }
@@ -770,6 +770,14 @@ class NFT {
     this._requireOwner();
     arr = JSON.parse(arr)
     this._put('rk', arr);
+  }
+
+  setUserNFTList(user, data) {
+    this._requireOwner();
+    data = JSON.parse(data);
+    this._put('userNFT.' + user, data)
+    // clear v1 list
+    this._mapPut('userNFT', user, [])
   }
 
   version(){
