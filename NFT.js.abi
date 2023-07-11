@@ -175,6 +175,15 @@
             "description": ""
         },
         {
+            "name": "setUserNFTList",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [],
+            "description": ""
+        },
+        {
             "name": "version",
             "args": [],
             "amountLimit": [],
