@@ -79,6 +79,9 @@ class StorageFixer:
         key = f'znft.{id}'
         return self._get_storage_data(config('NFT_CONTRACT_ID'), key)
 
+    def _get_user_info_v2(self, user):
+        key = f'userInfo.{user}'
+        return self._get_storage_data(config('DAO_CONTRACT_ID'), key)
 
     def _execute_tx(self, tx):
         self.acc.sign_publish(tx)
@@ -92,6 +95,7 @@ class StorageFixer:
                 id_str = str(id).zfill(10)
                 details = self._get_nft_details(id_str)
                 if details['owner'] != 'deadaddr' and not details['owner'].startswith('Contract'):
+                    print(details)
                     self.staked_users.add(details['owner'])
                 break
             except Exception as err:
@@ -111,8 +115,14 @@ class StorageFixer:
                 pass
 
         for user in self.staked_users:
-            tx = self.iost.create_call_tx(config('DAO_CONTRACT_ID'), 'resetUserInfoV2', user)
-            response = self._execute_tx(tx)
+            if self._get_user_info_v2(user):
+                try:
+                    tx = self.iost.create_call_tx(config('DAO_CONTRACT_ID'), 'resetUserInfoV2', user)
+                    print(f'Calling resetUserInfoV2 for user {user}...')
+                    response = self._execute_tx(tx)
+                    print(response)
+                except Exception as err:
+                    print(err)
 
                 
 
