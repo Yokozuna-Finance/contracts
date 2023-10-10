@@ -1,7 +1,7 @@
 const DAILY_DISTRIBUTION = 10;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
-const TOKEN_REWARD = 'iost';
+const TOKEN_REWARD = 'yztest00';
 const STAKE_LIMIT = 9;
 
 class DAO {
@@ -539,13 +539,22 @@ class DAO {
     return [pool, pendingStr, userInfo]
   }
 
-  resetUserInfoV2(user) {
+  resetUserInfoV2(user, amount) {
     this._requireOwner();
     let userInfo = this._getUserInfoV2(user);
     if (userInfo != null){
-      userInfo.rewardPending = "0"
-      userInfo.rewardDebt = "0"
+      userInfo.rewardPending = "0";
+      userInfo.rewardDebt = "0";
+      userInfo.amount = amount;
       this._setUserInfoV2(user, userInfo);    
+    }
+  }
+
+  updatePoolV2(pool) {
+    pool = JSON.parse(pool);
+    this._requireOwner();
+    if (pool != null){
+      this._setPoolObjV2(pool)    
     }
   }
 

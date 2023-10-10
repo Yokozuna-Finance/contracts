@@ -6,6 +6,7 @@ import time
 import threading
 
 from concurrent import futures
+from decimal import Decimal
 from math import floor
 from decouple import config
 from base58 import b58decode
@@ -83,10 +84,25 @@ class StorageFixer:
         key = f'userInfo.{user}'
         return self._get_storage_data(config('DAO_CONTRACT_ID'), key)
 
+
+    def _get_pool_v2(self):
+        key = f'poolv2'
+        return self._get_storage_data(config('DAO_CONTRACT_ID'), key)
+
+
+    def _get_start_v2(self):
+        key = f'startv2'
+        return self._get_storage_data(config('DAO_CONTRACT_ID'), key)
+
     def _execute_tx(self, tx):
         self.acc.sign_publish(tx)
         receipt = self.iost.send_and_wait_tx(tx)
         return receipt
+
+
+    def _get_user_staked_nft_v2(self, user):
+        key = f'stakedV2.{user}'
+        return self._get_storage_data(config('DAO_CONTRACT_ID'), key)
 
     def _get_nft(self, id):
         retries = 0
@@ -97,6 +113,7 @@ class StorageFixer:
                 if details['owner'] != 'deadaddr' and not details['owner'].startswith('Contract'):
                     print(details)
                     self.staked_users.add(details['owner'])
+
                 break
             except Exception as err:
                 retries += 1
@@ -109,21 +126,69 @@ class StorageFixer:
     def process(self):
         current_id = self._get_current_id()
         print('CURRENT_ID:', current_id)
+        
+        precision_8 = Decimal("0.00000001")
 
         with futures.ThreadPoolExecutor(max_workers=100) as executor:
             for details in executor.map(self._get_nft, range(1, current_id+1)):
                 pass
 
+        pool_total = Decimal('0')
+        user_infos = []
         for user in self.staked_users:
-            if self._get_user_info_v2(user):
-                try:
-                    tx = self.iost.create_call_tx(config('DAO_CONTRACT_ID'), 'resetUserInfoV2', user)
-                    print(f'Calling resetUserInfoV2 for user {user}...')
-                    response = self._execute_tx(tx)
-                    print(response)
-                except Exception as err:
-                    print(err)
+            user_info = self._get_user_info_v2(user)
+            if user_info:
+                staked_nfts = self._get_user_staked_nft_v2(user)
+                print(f'{user} {user_info}')
+                user_total = Decimal('0')
+                if staked_nfts:
+                    for nft_id in staked_nfts:
+                        nft_info = self._get_nft_details(nft_id)
+                        user_total += Decimal(nft_info['pushPower'])
+                print(f'{user} total: {user_total}')
+                user_infos.append(user_info)
+                pool_total += user_total
 
+                if user == 'hooda1985@#!@#':
+                    try:
+                        if user_total > 0:
+                            user_total_str = str(user_total.quantize(precision_8))
+                        else:
+                            user_total_str = '0'
+
+                        tx = self.iost.create_call_tx(config('DAO_CONTRACT_ID'), 'resetUserInfoV2', user, user_total_str)
+                        print(f'Calling resetUserInfoV2 for user {user}...')
+                        response = self._execute_tx(tx)
+                        print(response)
+                    except Exception as err:
+                        print(err)
+                
+                
+
+        pool_v2 = self._get_pool_v2()
+        start = self._get_start_v2()
+        print(f'pool_total: {pool_total}')
+        print(start)
+        print(pool_v2)
+
+
+        acc_per_share = Decimal('10000') / pool_total
+        print(f' acc_per_share: {acc_per_share}')
+
+        pool_v2['total'] = str(pool_total.quantize(precision_8))
+        pool_v2['lastRewardTime'] = int(time.time())
+        pool_v2['accPerShare'] = str(acc_per_share.quantize(precision_8))
+        print(pool_v2)
+        
+        try:
+            tx = self.iost.create_call_tx(config('DAO_CONTRACT_ID'), 'updatePoolV2', json.dumps(pool_v2))
+            print(f'Calling updatePoolV2...')
+            response = self._execute_tx(tx)
+            print(response)
+        except Exception as err:
+            print(err)
+        
+        
                 
 
 if __name__ ==  "__main__":
