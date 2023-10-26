@@ -1,7 +1,7 @@
-const DAILY_DISTRIBUTION = 10;
+const DAILY_DISTRIBUTION = 100;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
-const TOKEN_REWARD = 'yztest00';
+const TOKEN_REWARD = 'iost';
 const STAKE_LIMIT = 9;
 
 class DAO {
