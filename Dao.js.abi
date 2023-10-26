@@ -93,6 +93,21 @@
             "amountLimit": []
         },
         {
+            "name": "resetUserInfoV2",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "updatePoolV2",
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
+        },
+        {
             "name": "can_update",
             "args": [
                 "string"

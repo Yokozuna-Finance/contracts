@@ -1,4 +1,4 @@
-const DAILY_DISTRIBUTION = 10;
+const DAILY_DISTRIBUTION = 100;
 const ROUND_DOWN = 1;
 const ROUND_UP = 0;
 const TOKEN_REWARD = 'iost';
@@ -537,6 +537,25 @@ class DAO {
     const pendingStr = pending.toFixed(pool.tokenPrecision, ROUND_DOWN);
 
     return [pool, pendingStr, userInfo]
+  }
+
+  resetUserInfoV2(user, amount) {
+    this._requireOwner();
+    let userInfo = this._getUserInfoV2(user);
+    if (userInfo != null){
+      userInfo.rewardPending = "0";
+      userInfo.rewardDebt = "0";
+      userInfo.amount = amount;
+      this._setUserInfoV2(user, userInfo);    
+    }
+  }
+
+  updatePoolV2(pool) {
+    pool = JSON.parse(pool);
+    this._requireOwner();
+    if (pool != null){
+      this._setPoolObjV2(pool)    
+    }
   }
 
   can_update(data) {
